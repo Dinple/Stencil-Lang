@@ -45,7 +45,7 @@ jobs:
           sphinx-build -W --keep-going -b html docs _site
       - name: Add the playground
         run: |
-          cp -r core playground examples doc _site/
+          cp -r core playground examples _site/
           touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

@@ -51,7 +51,5 @@ tools
 :maxdepth: 1
 :caption: Reference
 
-reference/SPEC
-reference/VOCABULARY
 reference/API
 ```

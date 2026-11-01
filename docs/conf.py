@@ -43,11 +43,11 @@ html_theme_options = {
     },
 }
 
-# The language, vocabulary and API documents live in doc/ at the top of the
-# repository; copy them in so they render as part of this site.
+# The query API document lives in doc/ at the top of the repository; copy it
+# in so it renders as part of this site.
 HERE = os.path.dirname(os.path.abspath(__file__))
 os.makedirs(os.path.join(HERE, 'reference'), exist_ok=True)
-for name in ('SPEC.md', 'VOCABULARY.md', 'API.md'):
+for name in ('API.md',):
     shutil.copyfile(os.path.join(HERE, '..', 'doc', name), os.path.join(HERE, 'reference', name))
 
 

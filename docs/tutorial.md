@@ -59,9 +59,6 @@ computed from other layers.
 :language: stencil
 ```
 
-The rule kinds and their exact meaning are listed in
-{doc}`reference/VOCABULARY`, section 3.
-
 ## Level 3: modules
 
 A module is a file that can leave some of its parameters `required`. The

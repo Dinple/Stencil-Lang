@@ -89,13 +89,3 @@ tracks, so changing `RT` in the main file changes the row.
 :language: stencil
 :start-at: technology {
 ```
-
-## Testing a split
-
-To check a split, resolve the single-file and the modular version and
-compare the objects, leaving out the module and source line of each. The
-two should have the same layers in the same order, with the same values.
-The tests in
-`tests/examples_compose.test.mjs` check the layer order, the bindings
-(for example that ASAP7 VIA0 lands on M1 and VIA34 starts from M3) and
-the site children of each composition.

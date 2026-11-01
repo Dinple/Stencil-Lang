@@ -35,9 +35,7 @@ states what has to be true of the combination (see {doc}`transplant`).
 
 A `rule` has a `kind` (width, spacing, enclosure, min_length, area,
 eol_spacing, cut_spacing and others), the layers it is `on`, a `value`,
-and optionally conditions, tables of values and cases. The exact meaning
-of each kind is normative and written down in {doc}`reference/VOCABULARY`,
-section 3.
+and optionally conditions, tables of values and cases.
 
 The reference checker implements that meaning on rectangles. It exists so
 that a cell generator, a rule deck and the description can be compared
@@ -112,5 +110,4 @@ same findings as a tuple (empty when the tool can take the technology).
 
 Only the layers a cell generator routes are checked: conductors from the
 device tier up to the highest layer the site uses for pins or in-cell
-tracks. The attributes a profile can set are listed in
-{doc}`reference/VOCABULARY`, section 2.12.
+tracks.
