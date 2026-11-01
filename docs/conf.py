@@ -17,6 +17,8 @@ myst_enable_extensions = ['colon_fence', 'deflist']
 myst_heading_anchors = 3
 source_suffix = {'.md': 'markdown'}
 exclude_patterns = ['_build']
+templates_path = ['_templates']
+smartquotes = False          # keep quotes, dashes and dots as typed
 suppress_warnings = ['myst.xref_missing']
 
 html_theme = 'sphinx_book_theme'
