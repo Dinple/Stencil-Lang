@@ -184,6 +184,7 @@ main {
 }
 .legend-chip:hover .swatch rect { stroke: var(--paper); }
 .legend-chip.off { opacity: 0.4; text-decoration: line-through; }
+.legend-chip.legend-all { font-weight: 600; }
 .swatch { flex: none; vertical-align: middle; }
 
 .canvas { flex: 1; min-height: 0; overflow: hidden; position: relative; }

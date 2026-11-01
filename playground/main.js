@@ -323,6 +323,20 @@ for (const id of ['top', 'stack', 'device']) {
 function renderLegend(items) {
   const box = $('legend');
   box.innerHTML = '';
+  // all on / all off, for the layers this view draws
+  for (const [label, hide] of [['All on', false], ['All off', true]]) {
+    if (!items.length) break;
+    const all = document.createElement('button');
+    all.className = 'legend-chip legend-all';
+    all.textContent = label;
+    all.title = hide ? 'hide every layer' : 'show every layer';
+    all.addEventListener('click', () => {
+      for (const it of items) if (hide) state.hidden.add(it.name); else state.hidden.delete(it.name);
+      store.set(KEYS.hidden, JSON.stringify([...state.hidden]));
+      update();
+    });
+    box.appendChild(all);
+  }
   for (const it of items) {
     const chip = document.createElement('button');
     chip.className = `legend-chip${state.hidden.has(it.name) ? ' off' : ''}`;
