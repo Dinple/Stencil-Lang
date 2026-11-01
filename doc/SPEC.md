@@ -329,12 +329,12 @@ an error (C041).
   database units (1 DBU = 1 grid step; areas in DBU^2). A length that is
   not an exact multiple of the grid is C070 unless wrapped in `snap()`,
   `floor()` or `ceil()`, or snapped by an import's `scale { snap = true }`.
-- Integers outside +/-(2⁵³−1) cannot be written exactly as JSON numbers;
+- Integers outside +/-(2^53-1) cannot be written exactly as JSON numbers;
   they are C071 and emitted as decimal strings.
 - Exception: rule thresholds (attributes of `rule`, `case`, `table`,
   `alternative`) are exact quantities, not geometry (VOCABULARY.md section 3.1).
   An off-grid threshold is written as the string `"n/d"` (DBU), and one
-  beyond +/-(2⁵³−1) as the string `"n"`; neither is an error.
+  beyond +/-(2^53-1) as the string `"n"`; neither is an error.
 
 ### 3.8 Vocabulary validation and checks
 

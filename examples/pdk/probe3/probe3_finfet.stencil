@@ -4,6 +4,10 @@ stencil 0.1
 # point: 6T_2F_45CPP_24M0P_30M1P_24M2P_2MPO_ET_M0 (CHSTR 6, FIN 2, CPP 45, M0P 24,
 # M1P 30, M2P 24, MPO 2, EUV-tight rules, M0 power pins).
 #
+# The modules: device.stencil (markers, FEOL, MOL, contacts, cell template) and
+# frontside.stencil (M0 .. M2). This file stacks them, sets the row height from
+# the track count, and adds the cell outline, rails, pins and tracks.
+#
 # Source legend (paths in the PROBE3.0 PDK checkout):
 #   [CM]  PDK/PROBE3/DesignEnablement/Cadence_Synopsys/inputs/config.mk
 #   [DOC] PDK/PROBE3/Docs/README.md
@@ -16,12 +20,13 @@ stencil 0.1
 #         dumped to text (cited as [GDS]:line)
 # Tags [JF], [CFG], [PRE] cite the configuration of a cell generator used with
 # this PDK (not part of the public PDK).
-# Tags: INFERRED = derived by me from the cited facts; CONFLICT = sources disagree
+# Tags: INFERRED = derived from the cited facts; CONFLICT = sources disagree
 # (value chosen is stated); GAP = not expressible or not known (not expressible in std/0 yet).
 
-module { version = "0.1.0"; vocabulary = "std/0" }
+module { version = "0.2.0"; vocabulary = "std/0" }
 
 technology {
+  stack = [dev, fs]
   grid = 0.5nm      # [TL]:94 MANUFACTURINGGRID 0.0005 (um).  [GDS]:2 dbu is 0.25 nm (finer); LISD offset 22.5 nm needs <= 0.5 nm
   pdk  = "https://github.com/ABKGroup/PROBE3.0"   # [DOC]:13 links this repository
   note = "Variant PROBE3_FinFET_2F_4T_4530OF0; LIB_NAME pattern [CM]:54"
@@ -29,113 +34,16 @@ technology {
 
 # ---- parameters (the variant knobs) ---------------------------------
 RT   = 4            # [CM]:10 RT = 4 ; [PRE]:7 TRACK = 4
-NFIN = 2            # [CM]:11 FIN = 2 ; [PRE]:6 CHANNEL = 2F
-CPP  = 45nm         # [CM]:12 ; [PRE]:8 ; [JF]:8 PC pitch 45.0
-MP0  = 24nm         # [CM]:13 ; [JF]:28
-MP1  = 30nm         # [CM]:14 ; [PRE]:9 ; [JF]:48
-MP2  = 24nm         # [CM]:15 ; [JF]:68
-M1OF = 0nm          # [PRE]:10 M1OF = 0 ; [JF]:47 ; [GDS]:59 M1 centre x = 60 nm = 2*MP1
-FP   = 24nm         # [CM]:25 FINPITCH = 0.024
-H    = (RT + 2) * MP0   # [DOC]:26 "if PGPIN = M0, CHSTR = RT+2"; [GG]:388 cellHeight = realTrack*metal2Pitch (M0P == M2P, [GG]:353); [GDS]:4 boundary h = 144
 
-# ---- stack, bottom to top ---------------------------------------------------------
-# Well / implant: drawn by the generator over exactly half the cell, so they are band-derived markers.
-layer NW   { role = marker; gds = [1, 0];  gds_label = [1, 251]; from = band(p)
-             note = "[LVS]:32 well=1; [GG]:1315-1317 NWell = y H/2..H; [GDS]:5; label VDD on 1/251 [GDS]:63" }
-layer NSEL { role = marker; gds = [12, 0]; from = band(n); note = "[LVS]:36; [GG]:1320-1322 y 0..H/2; [GDS]:6" }
-layer PSEL { role = marker; gds = [13, 0]; from = band(p); note = "[LVS]:37; [GG]:1324-1326 y H/2..H; [GDS]:7" }
-layer PSUB { role = marker; gds = [3, 0];  gds_label = [3, 251]
-             note = "[LVS]:33 P_SUB 3; only the VSS label 3/251 is drawn [GDS]:64; GAP: no label-only layer kind" }
+import "./device"    as dev { LANDING = fs.M0; BOUNDARY = BOUNDARY
+                              H_ROW = (RT + 2) * fs.MP0 }   # [DOC]:26 "if PGPIN = M0, CHSTR = RT+2"; [GG]:388 cellHeight = realTrack*metal2Pitch (M0P == M2P, [GG]:353); [GDS]:4 boundary h = 144
+import "./frontside" as fs
 
-layer FIN    { role = channel; gds = [2, 0]; note = "[LVS]:31 fin 2; drawn full cell width [GDS]:8-12" }
-layer ACTIVE { role = marker;  gds = [11, 0]
-               note = "[LVS]:30. LVS recognises devices on ACTIVE∩GATE, not FIN ([LVS]:166-169). GAP (A3): std/0 cross cannot say 'fins count only inside ACTIVE'" }
-layer PC     { role = conductor; direction = vertical; width = 16nm; pitch = CPP; offset = 0nm; gds = [7, 0]
-               note = "PROBE3 name GATE ([LVS]:40 GATE 7); generator JSON key PC ([JF]:2-11, layer_number 7). width [CM]:26 GATEWIDTH; offset [GDS]:13 (x centre 0)" }
-layer GCUT   { role = marker; gds = [10, 0]
-               note = "[LVS]:35 Gcut; GATE_1 = GATE not Gcut [LVS]:168; drawn on cell-edge gates and over rails [GDS]:51-54 by [GG]:1378-1381,1727-1750. GAP: placement-dependent, no 'from' expression" }
-layer SDT    { role = cut; gds = [88, 0]; note = "[LVS]:68; LISD->S/D contact [LVS]:187; [GG]:1592" }
-layer LISD   { role = conductor; direction = vertical; width = 16nm; pitch = CPP; offset = CPP/2; gds = [17, 0]
-               note = "[LVS]:42; width = gateWidth [GG]:1427; columns at x = 22.5, 67.5 ... [GDS]:35-39 (INFERRED pitch/offset). Not a routing layer for FinFET" }
-layer LIG    { role = conductor; direction = none; gds = [16, 0]
-               note = "[LVS]:43; gate pick-up squares 14x14 nm + full-width strips over rails [GDS]:46-50. CONFLICT: shape level of LIG vs LISD unknown (VOCABULARY open q.2)" }
-layer CA     { role = cut; gds = [14, 0]; note = "[LVS]:44; CALIG = CA∩LIG, CALISD = CA∩LISD [LVS]:149-150; [GG]:1364-1375" }
-layer M0     { role = conductor; direction = horizontal; width = 14nm; pitch = MP0; offset = MP0/2
-               gds = [15, 0]; gds_pin = [15, 0]; gds_label = [15, 251]
-               note = "width [CM]:30, [TL]:115 width = m2w for M0; offset INFERRED from [GDS]:55-56 (signal centres y = 60, 108 = 12 + 24k). CONFLICT: [JF]:27 offset 0.0; label [LVS]:80-81" }
-layer V0     { role = cut; gds = [18, 0]; note = "[LVS]:46; [GG]:1638" }
-layer M1     { role = conductor; direction = vertical; width = 15nm; pitch = MP1; offset = M1OF
-               gds = [19, 0]; gds_pin = [19, 0]; gds_label = [19, 251]
-               note = "width [CM]:31 M1WIDTH 0.015 and [GDS]:59 (15 nm); [TL]:118 width = pitch/2 = 15. CONFLICT: [JF]:49 width 14.0. label [LVS]:84-85, [GDS]:60" }
-layer V1     { role = cut; gds = [21, 0]; note = "[LVS]:48; [GG]:1638. [TL]:47 layer_num V1 21 agrees. CONFLICT above M2: [TL]:50 M3 23 vs [LVS]:50 M3 30" }
-layer M2     { role = conductor; direction = horizontal; width = 14nm; pitch = MP2; offset = 0nm
-               gds = [20, 0]; gds_pin = [20, 0]; gds_label = [20, 251]
-               note = "width [CM]:32; offset from [JF]:67 (no M2 shape in [GDS]; [TL] writes OFFSET 0.0); label [LVS]:89-90 (M2_PIN layer_def 88, map 89)" }
 layer BOUNDARY { role = marker; gds = [100, 0]; note = "[GG]:1311 b{100}; [GDS]:4" }
 
-# ---- devices -----------------------------------------------------------------------
-figure FIN_F   { layer = FIN; width = 6nm
-                 note = "[CM]:24 FINWIDTH 0.006; [GDS]:8 h = 6. GAP: thickness unknown -- [PM]:53-54 model has tfin = 21 nm, hfin = 5 nm, which contradicts a 6 nm drawn fin" }
-array  FINS    { of = FIN_F; axis = y; pitch = FP; offset = FP; count = 1..NFIN
-                 note = "per-device fins; [GDS]:8-12 fin centres 24,48 (n) and 96,120 (p); first at y = FP (INFERRED offset). [GG]:390-395 numFin per track count. GAP: CDL nfin up to 16 ([CDL]) = fingers x fins, std/0 has no finger count" }
-array  FIN_GRID { of = FIN_F; axis = y; pitch = FP; offset = FP; count = fill
-                  note = "the drawn fin field: 5 fins per 144 nm row in [GDS]:8-12 (dummy at y = 72). CONFLICT: [GG]:1331-1343 code would draw 2*NFIN+3 = 7 fins incl. y = 0 and H" }
-figure GATE_LN { layer = PC; width = 16nm; extend = BOUNDARY; extend_by = 5nm
-                 note = "[GG]:1359-1360 lyGate = -0.005, uyGate = H + 0.005; [GDS]:13" }
-array  GATES   { of = GATE_LN; axis = x; pitch = CPP; offset = 0nm; count = fill; note = "[GG]:1356 gate every CPP from x = 0; [GDS]:13-17" }
-
-cross FET {
-  gate = PC; channel = FINS; faces = [top, left, right]
-  note = "INFERRED from the FinFET naming and fin layer. CONFLICT: compact model [PM]:41 GEOMOD=2 (BSIM-CMG quadruple gate = all faces, per the BSIM-CMG manual, not in repo)"
-  size nfin { sets = FINS.count; note = "[CDL]:12 nfin=2; LVS extracts nfin = trunc(Weff_edge / 17nm) from ACTIVE, [LVS]:211,233 -- not from a fin count" }
-  model pmos_rvt { polarity = p; note = "[PM]:148 .model pmos_rvt pmos; [LVS]:208" }
-  model nmos_rvt { polarity = n; note = "[PM]:17 .model nmos_rvt nmos; [LVS]:230. LVT/SLVT/SRAMVT markers 98/97/110 exist [LVS]:38-39,67 but no library uses them" }
-}
-
-stratum DEV { layers = [FIN, ACTIVE, LISD]; polarity = [n, p]; note = "single tier; n bottom half, p top half ([DOC] img/techParam.png, [GDS]:33-34)" }
-
-# ---- connections ---------------------------------------------------------------------
-connector SD_CT  { lower = ACTIVE; cut = SDT; upper = LISD
-                   note = "[LVS]:187-188 connect LISD N_src_drn/P_src_drn by SDT; N_src_drn = ACTIVE∩Nselect - gate [LVS]:181-182. GAP: lower is a derived region, std/0 only accepts a layer. SDT is a 16 x 42 nm bar [GDS]:40-44, size not fixed" }
-connector G_LIG  { lower = PC;   cut = none; upper = LIG; note = "[LVS]:189 connect LIG GATE_1 (no cut). a contact without a cut layer" }
-connector SD_LIG { lower = LISD; cut = none; upper = LIG; note = "[LVS]:190 connect LIG LISD (no cut). a contact without a cut layer" }
-connector CA_M0  { lower = [LIG, LISD]; cut = CA; upper = M0; size = 14nm
-                   note = "[LVS]:149-153; size = min(gateWidth, M0 width) [GG]:1365, [GDS]:18-32. Generator abstraction: [JF]:12-21 CA lower PC upper M0, enclosure 0" }
-connector VIA0   { lower = M0; cut = V0; upper = M1; size = 14nm
-                   enclose_lower = [7nm, 0nm]; enclose_upper = [7nm, 0.5nm]
-                   note = "size [GG]:228 min(M0W, M1W), [GDS]:45. Enclosure: [TL]:225-251 VIARULE V0_RULE enc 0.007, side (15-14)/2 = 0.5. CONFLICT: LEF ENCLOSURE pairs are orientation-free, std/0 pair is [x, y]; [JF]:36-37 says 0.0; [CM]:19 ENC = 5; [TL]:135 LAYER V0 WIDTH = min(m2w, M0P/2) = 12 nm vs [TL]:202 VIARULE 14 nm" }
-connector VIA1   { lower = M1; cut = V1; upper = M2; size = 14nm
-                   enclose_lower = [7nm, 0.5nm]; enclose_upper = [7nm, 0nm]
-                   note = "size [GG]:231 min(M1W, M2W); [TL]:207,237 V1_RULE: M2 pitch < M1 pitch so the side enclosure goes on the lower layer. CONFLICT: [JF]:56-57 0.0" }
-
-# ---- cell template -------------------------------------------------------------------
-site CORE {
-  width  = CPP      # [GG]:411 SITE SIZE cppWidth BY cellHeight ; [TL]:102 SITE coresite SIZE cpp BY ch*M0P ([TL]:81)
-  height = H        # 144 nm
-  symmetry = [y]    # [GG]:414 and [TL]:104 SYMMETRY Y (macros say SYMMETRY X Y, [GG]:1176)
-  boundary = BOUNDARY
-  pins = [M1, M2]   # [GG]:1026,1028 pin shapes collected on metal layers 3 (M1) and 4 (M2); [JF] has no io_pin flag
-  rail VDD { layer = M0; edge = top;    width = 36nm; note = "[GG]:734 rectWidth = M0P/2*1.5 = 18 (half-width); [GDS]:57 h = 36" }
-  rail VSS { layer = M0; edge = bottom; width = 36nm; note = "[GDS]:58" }
-  band p { stratum = DEV; y = H/2 .. H;   note = "[GG]:1315-1326 NWell/PSELECT upper half; p ACTIVE y 79..125 [GDS]:33" }
-  band n { stratum = DEV; y = 0nm .. H/2; note = "NSELECT lower half; n ACTIVE y 19..65 [GDS]:34" }
+&dev.CORE {
+  pins = [fs.M1, fs.M2]   # [GG]:1026,1028 pin shapes collected on metal layers 3 (M1) and 4 (M2); [JF] has no io_pin flag
+  rail VDD { layer = fs.M0; edge = top;    width = 36nm; note = "[GG]:734 rectWidth = M0P/2*1.5 = 18 (half-width); [GDS]:57 h = 36" }
+  rail VSS { layer = fs.M0; edge = bottom; width = 36nm; note = "[GDS]:58" }
   tracks M0 { use = 1..RT; note = "INFERRED: M0 tracks at offset + k*MP0, k = 0..5; k = 0 and 5 sit under the 36 nm rails, so RT = 4 signal tracks k = 1..4 ([DOC] img/techParam.png). Index base is not defined by std/0" }
 }
-
-# ---- rules (Level 2) ------------------------------------------------------------------
-# Sign-off-style values written by genTechLef.tcl for BEOL1_24_30_24_... ([CM]:40) with M2WIDTH 0.014.
-rule M0_W   { kind = width;   on = M0; value = 14nm; note = "[TL]:114-116 i==0: width = m2w" }
-rule M0_S   { kind = spacing; on = M0; value = MP0 - 14nm; note = "[TL]:116 spc = pitch - m2w = 10 nm" }
-rule M0_EOL { kind = eol_spacing; on = M0; width_below = MP0; within = 1nm; value = MP0
-              note = "[TL]:129,172 SPACING tspc(=pitch) ENDOFLINE tspc WITHIN 0.001" }
-rule M1_W   { kind = width;   on = M1; value = MP1/2; note = "[TL]:118-119 width = spacing = pitch/2" }
-rule M1_S   { kind = spacing; on = M1; value = MP1/2 }
-rule M1_EOL { kind = eol_spacing; on = M1; width_below = MP1; within = 1nm; value = MP1 }
-rule M2_W   { kind = width;   on = M2; value = 14nm }
-rule M2_S   { kind = spacing; on = M2; value = MP2 - 14nm }
-rule M2_EOL { kind = eol_spacing; on = M2; width_below = MP2; within = 1nm; value = MP2 }
-rule V0_SP  { kind = cut_spacing; on = V0; value = 42nm
-              note = "[TL]:144,160 SPACING sqrt(2)*M1 pitch CENTERTOCENTER, printed %.3f -> 0.042 um. GAP: std/0 has no centre-to-centre measure flag; exact value 30*sqrt(2) not rational" }
-rule V1_SP  { kind = cut_spacing; on = V1; value = 34nm; note = "[TL]:144,160 sqrt(2)*24 = 33.94 printed %.3f -> 0.034 um, CENTERTOCENTER" }
-# GAP: [TL]:128,171 AREA pitch*pitch/2 (M0 288 nm^2, M1 450 nm^2) -- kind = area exists but value must be a length (probes/p07).
-# GAP: MPO = 2 minimum pin opening ([CM]:16, [DOC]:52) -- no rule kind; x_ rule kinds are rejected (probes/p07).

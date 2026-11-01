@@ -135,7 +135,7 @@ test('top/bottom edge features run along the edge and follow row flips', () => {
 });
 
 
-test('device recognition: default gate ∩ channel, marker cover / touch, explicit recognize', async () => {
+test('device recognition: default gate and channel, marker cover / touch, explicit recognize', async () => {
   const { recognizeDevices } = await import('../core/rulecheck.js');
   const src = `stencil 0.1
 technology { grid = 1nm }
@@ -167,7 +167,7 @@ cross CUTAWARE { gate = GATE; channel = SHEET; faces = all; recognize = minus(in
   assert.equal(dev([...base, S('GCUT', -5, 0, 20, 100)], 'CUTAWARE').length, 1);   // the cut gate is no device
 });
 
-// ---- M3c review -------------------------------------------
+// ---- -------------------------------------------
 import { resolveProject } from '../core/resolve.js';
 import { checkProfile } from '../core/profile.js';
 import { buildModel, renderTop } from '../playground/render.js';
@@ -263,7 +263,7 @@ site S { width = 10nm; height = 40nm
   assert.equal(d.line, lineOf(src, 'rail VDDK'));
 });
 
-// ---- M3c round 2 ---------------------------------------
+// ---- ---------------------------------------
 test('C2-1: an inherited shorthand tracks block keeps the layer of the module that wrote it', () => {
   const lib = 'stencil 0.1\nlayer M { role = conductor; direction = horizontal; pitch = 10nm }\nsite S { width = 10nm; height = 40nm\n  tracks M { use = 1..3 } }';
   for (const local of ['layer M { role = conductor; direction = vertical; pitch = 4nm }\n', '']) {
@@ -288,7 +288,7 @@ test('C2 follow-up: duplicate selectors are compared as sets (V041)', () => {
   assert.deepEqual(codes(resolve(CROSS('model a { polarity = n; markers = [LVT] }\n model b { polarity = n; markers = [LVT, LVT] }'))), ['V041']);
 });
 
-// ---- M3c round 3 ---------------------------------------
+// ---- ---------------------------------------
 test('C3-1: rail widths given as choices or ranges are checked, flipped rows too', () => {
   for (const w of ['one_of(20nm)', '20nm .. 20nm', 'one_of(-20nm)', '-20nm .. -10nm']) {
     const layer = `layer MW { role = conductor; direction = horizontal; width = ${w} }\n`;
@@ -299,7 +299,7 @@ test('C3-1: rail widths given as choices or ranges are checked, flipped rows too
   }
 });
 
-// ---- M3c round 4 ---------------------------------------
+// ---- ---------------------------------------
 test('C4-1: explicit rail widths may be choices or ranges (largest value), directly and in flipped rows', () => {
   for (const [w, max] of [['one_of(2nm, 20nm)', 20], ['2nm .. 20nm', 20], ['one_of(8nm)', 8], ['8nm .. 8nm', 8]]) {
     const direct = resolveSource(G1 + `layer M { role = conductor; direction = horizontal }\nsite S { width = 20nm; height = 100nm\n  rail A { layer = M; y = 20nm; width = ${w} } }`);
@@ -314,7 +314,7 @@ test('C4-1: explicit rail widths may be choices or ranges (largest value), direc
   }
 });
 
-// ---- M3c round 5 ---------------------------------------
+// ---- ---------------------------------------
 test('C5-1: rail collisions are exact up to the expansion bound; beyond it they are refused, not rounded', () => {
   const src = (h, y, w) => G1 + `layer M { role = conductor; direction = horizontal }\nsite S {\n  width = 20nm; height = ${h}nm\n  rail A { layer = M; y = 0nm; width = ${w} }\n  rail B { layer = M; y = ${y}nm; width = 2nm } }`;
   const B = 2 ** 50;                                                                   // 2d = 2^50
@@ -330,7 +330,7 @@ test('expanded coordinates beyond +/-2^52 are reported, not rounded', () => {
   assert.ok(codes(r).includes('V040'), JSON.stringify(r.diags));
 });
 
-// ---- M3c round 6 ---------------------------------------
+// ---- ---------------------------------------
 test('C6-1: rows over invalid sites report diagnostics instead of throwing', () => {
   for (const k of ['site K { width = 20nm }', 'site K { width = 20nm; height = "x" }', 'site K { height = 50nm }']) {
     for (const row of ['row R { site = K }', 'row R { site = K; y = "a" }']) {
@@ -381,7 +381,7 @@ site S { width = 20nm; height = 100nm
   assert.ok(n > 400, `${n}`);
 });
 
-// ---- M3c round 8 ---------------------------------------
+// ---- ---------------------------------------
 test('C8: at most 100000 tracks in one row, counting both ends', () => {
   const run = (h) => resolveSource(G1 + `layer M { role = conductor; direction = horizontal; pitch = 1nm }\nsite S { width = 20nm; height = ${h}nm\n  tracks M {} }`);
   const ok = run(99999);

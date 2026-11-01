@@ -1,0 +1,35 @@
+stencil 0.1
+# PROBE3 transistors under the ASAP7 routing grid.
+#
+# The device tier (fins, gates at a 45 nm pitch, local interconnect, contacts)
+# comes from PROBE3. The metals, from M1 up to the pad layer, come from ASAP7.
+# This file binds the modules to each other and adds the cell template.
+#
+# Try it: bind dev { CPP = 34nm } and M1_ON_GATE_GRID fails, because in-cell M1
+# lines one gate pitch apart would be closer than the ASAP7 M1 spacing allows.
+
+technology { grid = 0.25nm; stack = [dev, fs, beol] }   # ASAP7 needs 0.25 nm, PROBE3 0.5 nm
+
+RT = 4                                   # signal tracks per cell, as in PROBE3
+
+import "../pdk/probe3/device"   as dev  { LANDING = fs.M1; BOUNDARY = OUTLINE
+                                          H_ROW = (RT + 2) * fs.MP }   # 2 tracks for the rails, as in PROBE3
+import "../pdk/asap7/frontside" as fs   { CPP = dev.CPP }               # in-cell M1 follows the PROBE3 gate grid
+import "../pdk/asap7/beol"      as beol { BELOW = fs.M3 }
+
+layer OUTLINE { role = marker; gds = [100, 0] }
+
+# The cell template: ASAP7 puts the rails on M1 and the signal tracks on M2.
+&dev.CORE {
+  rail VDD { layer = fs.M1; edge = top;    width = 18nm }
+  rail VSS { layer = fs.M1; edge = bottom; width = 18nm }
+  pins = [fs.M1, fs.M2]
+  tracks M2 { use = 1..RT }
+}
+
+check ROW_TRACKS      { holds = mod(dev.H_ROW, fs.MP) == 0nm
+                        message = "the row height is not a whole number of ASAP7 track pitches" }
+check M1_ON_GATE_GRID { holds = dev.CPP >= fs.M1_W.value + fs.M1_S.value
+                        message = "in-cell M1 lines one gate pitch apart break the M1 width plus spacing" }
+check CONTACT_ON_M1   { holds = dev.CA_M0.size <= fs.M1.width
+                        message = "the PROBE3 contact is wider than the ASAP7 M1 line it lands on" }

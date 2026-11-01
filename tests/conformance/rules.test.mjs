@@ -89,7 +89,7 @@ test('an unevaluated operand (unbound parameter) adds no V035', () => {
   assert.deepEqual(r.diags.filter((d) => d.severity === 'error').map((d) => d.code), ['C012']);
 });
 
-// ---- M3b review, expected verdicts from section 3 ----------------
+// ---- expected verdicts from section 3 ----------------
 const LIB = `stencil 0.1
 technology { grid = 1nm }
 layer A { role = conductor }

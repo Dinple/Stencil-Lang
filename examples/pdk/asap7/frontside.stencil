@@ -1,0 +1,81 @@
+stencil 0.1
+# ASAP7 front-side routing used inside cells: M1 .. M3 (36 nm pitch), the in-cell
+# M1 grid on the gate pitch, the vias between them, and their rules.
+# Source keys (TLEF, CLEF, DRC, GST, ...) are listed in asap7.stencil.
+
+module { version = "0.2.0" }
+technology { grid = 0.25nm }
+
+MP     = 36nm     # M1-M3 pitch: TLEF:92 (M1), TLEF:128/133 (M2), TLEF:180 (M3)
+CPP = required(len)          # in-cell M1 sits on the gate grid
+
+# -- back end of line (TLEF rows; GDS numbers DRC:61-79)
+layer M1 { role = conductor; gds = [19, 0]; gds_label = [19, 251]      # DRC:61; GSUM:14,23
+  direction = none                                                     # see note
+  width  = 18nm                                                        # TLEF:93; DRC:2151 (minimum)
+  pitch  = MP                                                          # TLEF:92
+  offset = 0nm                                                         # TLEF:102
+  note = "TLEF:91 says DIRECTION VERTICAL (APR preferred). The cells use M1 both ways: 209/213 cells have horizontal M1 edges >36nm away from the rails (GGRID:8), the rails are horizontal M1 (CLEF:9938,9947), and the DRC M1 rules have no direction split (DRC:376-387 M1_SIDE/M1_TIP vs DRC:396-411 HE/VE for M4-M7). In-cell vertical M1 sits on the gate grid, not on these tracks: 564/585 centres are 27 mod 54 nm, 0 are 0 mod 36 (GM1). See array M1_CELL_TRK."
+}
+layer V1 { role = cut; gds = [21, 0] }                                 # DRC:62; TLEF:106-110
+layer M2 { role = conductor; direction = horizontal; gds = [20, 0]; gds_label = [20, 251]  # DRC:63; TLEF:114; GSUM:15,24
+  width  = one_of(18nm, 90nm, 162nm, 234nm, 306nm, 378nm)              # TLEF:157-159 LEF58_WIDTHTABLE
+  pitch  = MP                                                          # TLEF:128 (y pitch 0.036), TLEF:133
+  offset = 9nm                                                         # inferred: in-cell M2 centres at 45+36k (GST:73; GGRID:13)
+  shapes = rect                                                        # TLEF:165-167 RECTONLY
+  note = "TLEF:132-135 LEF58_PITCH 'PITCH 0.036 FIRSTLASTPITCH 0.045' makes the M2 tracks row-periodic: 45,81,...,225 nm, then +270 nm per row. A uniform pitch/offset cannot say that. Also TLEF:118 OFFSET -0.27 gives centres at 18 mod 36, which contradicts the cells (9 mod 36). RIGHTWAYONGRIDONLY (TLEF:161-163) has no std/0 attribute."
+}
+layer V2 { role = cut; gds = [25, 0] }                                 # DRC:64; TLEF:171-175
+layer M3 { role = conductor; direction = vertical; gds = [30, 0]       # DRC:65; TLEF:179
+  width = one_of(18nm, 90nm, 162nm, 234nm, 306nm, 378nm)               # TLEF:209-210
+  pitch = MP; offset = 0nm                                             # TLEF:180, TLEF:181
+  shapes = rect                                                        # TLEF:216-218
+}
+
+figure M1_WIRE { layer = M1; width = 18nm }                               # TLEF:93
+array M1_CELL_TRK {
+  of = M1_WIRE; axis = x; pitch = CPP; offset = CPP/2; count = fill        # inferred: GM1 (564/585 vertical M1 centres at 27 mod 54)
+  note = "In-cell vertical M1 grid (pins above gates). Differs from the APR M1 tracks (36nm, offset 0). std/0 allows one track set per layer."
+}
+
+connector VIA12 { lower = M1; cut = V1; upper = M2; size = 18nm        # TLEF:697-704
+  enclose_lower = [0nm, 2nm]; enclose_upper = [5nm, 0nm]               # TLEF:699 (M1 +-9,+-11), TLEF:701 (M2 +-14,+-9)
+  note = "DRC:2339 asks for M1 enclosure '5 & 2 nm' on opposite sides; the TLEF via has 2 & 2" }
+connector VIA23 { lower = M2; cut = V2; upper = M3; size = 18nm        # TLEF:688-695
+  enclose_lower = [5nm, 0nm]; enclose_upper = [0nm, 5nm] }             # TLEF:690, TLEF:692
+
+rule M1_W   { kind = width;   on = M1; value = 18nm }                                                         # DRC:2151-2152; TLEF:93
+rule M1_S   { kind = spacing; on = M1; value = 18nm; prl = 36nm; note = "side-to-side: both edges > 36nm (DRC:376)" }   # DRC:2156-2158; TLEF:94
+rule M1_EOL { kind = x_eol_tip; on = M1; width_below = 36nm                                                 # DRC:379-387
+  case tip_to_side       { value = 25nm }                                                                     # DRC:2163-2165
+  case tip_to_tip_wide   { value = 27nm }                                                                     # DRC:2169-2171
+  case tip_to_tip_narrow { value = 31nm }                                                                     # DRC:2175-2184
+}
+rule M1_A   { kind = area; on = M1; value = 504nm * 1nm; note = "TLEF:95 says 666nm^2 (0.000666um^2); the DRC value wins (TLEF:96: area 'should not matter')" }  # DRC:2193-2194
+
+# -- V1 / M2 / V2 / M3 (DRC M2 and M3 rules are copies of M1)
+rule V1_W   { kind = width; on = V1; value = 18nm }                                                           # DRC:2293-2294; TLEF:109
+rule V1_S   { kind = x_via_track_spacing; on = V1                                                                     # DRC:2301-2304
+  case same_track { value = 18nm }; case parallel_unaligned { value = 27nm }; case parallel_aligned { value = 18nm } }
+rule V1_M1_EN { kind = x_end_cap_enclosure; on = [V1, M1]; case end_cap { value = 5nm }; case other_end { value = 2nm } }  # DRC:2339-2342
+rule V1_M2_EN { kind = x_end_cap_enclosure; on = [V1, M2]; case end_cap { value = 5nm }; case side { value = 0nm } }      # DRC:2346-2354
+rule M2_W   { kind = width;   on = M2; value = 18nm }                                                         # DRC:2198-2199; TLEF:115
+rule M2_S   { kind = spacing; on = M2; value = 18nm; prl = 36nm }                                             # DRC:2203-2205; TLEF:116
+rule M2_EOL { kind = x_eol_tip; on = M2; width_below = 36nm                                                 # DRC:377-386
+  case tip_to_side { value = 25nm }; case tip_to_tip_wide { value = 27nm }; case tip_to_tip_narrow { value = 31nm }   # DRC:2210-2231
+  note = "TLEF:141-143 encodes this as LEF58 'SPACING 0.018 ENDOFLINE 0.025 WITHIN 0.02 ENDTOEND 0.031 PARALLELEDGE 0.025 WITHIN 0.02'" }
+rule M2_A   { kind = area; on = M2; value = 504nm * 1nm; note = "TLEF:125 says 666" }                           # DRC:2240-2241
+rule M2_LEN { kind = min_length; on = M2; value = 37nm; note = "TLEF MINSIZE 0.037 0.018 (length x width)" }  # TLEF:126
+rule V2_W   { kind = width; on = V2; value = 18nm }                                                           # DRC:2370-2371; TLEF:174
+rule V2_M2_EN { kind = enclosure; on = [V2, M2]; value = 5nm; note = "5 & 5 on opposite sides" }              # DRC:2414-2419
+rule V2_M3_EN { kind = x_end_cap_enclosure; on = [V2, M3]; case end_cap { value = 5nm }; case side { value = 0nm } }   # DRC:2421-2431
+rule M3_W   { kind = width;   on = M3; value = 18nm }                                                         # DRC:2245-2246; TLEF:182
+rule M3_S   { kind = spacing; on = M3; value = 18nm; prl = 36nm }                                             # DRC:2250-2252; TLEF:183
+rule M3_EOL { kind = x_eol_tip; on = M3; width_below = 36nm                                                 # DRC:378-387
+  case tip_to_side { value = 25nm }; case tip_to_tip_wide { value = 27nm }; case tip_to_tip_narrow { value = 31nm } }  # DRC:2257-2278
+rule M3_A   { kind = area; on = M3; value = 504nm * 1nm; note = "TLEF:190 says 666" }                           # DRC:2287-2288
+rule M3_LEN { kind = min_length; on = M3; value = 37nm }                                                      # TLEF:191 MINSIZE
+
+rule M1_CORNER { kind = corner_spacing; on = M1; value = 20nm }              # DRC:2186-2189
+rule M2_CORNER { kind = corner_spacing; on = M2; value = 20nm }              # DRC:2235
+rule M3_CORNER { kind = corner_spacing; on = M3; value = 20nm }              # DRC:2282

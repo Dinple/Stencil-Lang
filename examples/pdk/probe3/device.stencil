@@ -1,0 +1,77 @@
+stencil 0.1
+# PROBE3.0 FinFET device tier: well and implant markers, fins, gates, local
+# interconnect, the contacts up to the first metal, and the cell template.
+# Source keys ([CM], [LVS], [GG], [TL], [GDS], ...) are listed in probe3_finfet.stencil.
+
+module { version = "0.2.0" }
+technology { grid = 0.5nm }
+
+NFIN = 2            # [CM]:11 FIN = 2 ; [PRE]:6 CHANNEL = 2F
+CPP  = 45nm         # [CM]:12 ; [PRE]:8 ; [JF]:8 PC pitch 45.0
+FP   = 24nm         # [CM]:25 FINPITCH = 0.024
+H_ROW    = required(len)     # the row height (PROBE3: (RT + 2) * MP0, see probe3_finfet.stencil)
+LANDING  = required(layer)   # the first metal CA lands on (PROBE3: M0)
+BOUNDARY = required(layer)   # the cell outline marker
+
+# ---- stack, bottom to top ---------------------------------------------------------
+# Well / implant: drawn by the generator over exactly half the cell, so they are band-derived markers.
+layer NW   { role = marker; gds = [1, 0];  gds_label = [1, 251]; from = band(p)
+             note = "[LVS]:32 well=1; [GG]:1315-1317 NWell = y H/2..H; [GDS]:5; label VDD on 1/251 [GDS]:63" }
+layer NSEL { role = marker; gds = [12, 0]; from = band(n); note = "[LVS]:36; [GG]:1320-1322 y 0..H/2; [GDS]:6" }
+layer PSEL { role = marker; gds = [13, 0]; from = band(p); note = "[LVS]:37; [GG]:1324-1326 y H/2..H; [GDS]:7" }
+layer PSUB { role = marker; gds = [3, 0];  gds_label = [3, 251]
+             note = "[LVS]:33 P_SUB 3; only the VSS label 3/251 is drawn [GDS]:64; GAP: no label-only layer kind" }
+
+layer FIN    { role = channel; gds = [2, 0]; note = "[LVS]:31 fin 2; drawn full cell width [GDS]:8-12" }
+layer ACTIVE { role = marker;  gds = [11, 0]
+               note = "[LVS]:30. LVS recognises devices on ACTIVE and GATE, not FIN ([LVS]:166-169). GAP (A3): std/0 cross cannot say 'fins count only inside ACTIVE'" }
+layer PC     { role = conductor; direction = vertical; width = 16nm; pitch = CPP; offset = 0nm; gds = [7, 0]
+               note = "PROBE3 name GATE ([LVS]:40 GATE 7); generator JSON key PC ([JF]:2-11, layer_number 7). width [CM]:26 GATEWIDTH; offset [GDS]:13 (x centre 0)" }
+layer GCUT   { role = marker; gds = [10, 0]
+               note = "[LVS]:35 Gcut; GATE_1 = GATE not Gcut [LVS]:168; drawn on cell-edge gates and over rails [GDS]:51-54 by [GG]:1378-1381,1727-1750. GAP: placement-dependent, no 'from' expression" }
+layer SDT    { role = cut; gds = [88, 0]; note = "[LVS]:68; LISD->S/D contact [LVS]:187; [GG]:1592" }
+layer LISD   { role = conductor; direction = vertical; width = 16nm; pitch = CPP; offset = CPP/2; gds = [17, 0]
+               note = "[LVS]:42; width = gateWidth [GG]:1427; columns at x = 22.5, 67.5 ... [GDS]:35-39 (INFERRED pitch/offset). Not a routing layer for FinFET" }
+layer LIG    { role = conductor; direction = none; gds = [16, 0]
+               note = "[LVS]:43; gate pick-up squares 14x14 nm + full-width strips over rails [GDS]:46-50. CONFLICT: shape level of LIG vs LISD unknown (VOCABULARY open q.2)" }
+layer CA     { role = cut; gds = [14, 0]; note = "[LVS]:44; CALIG = CA and LIG, CALISD = CA and LISD [LVS]:149-150; [GG]:1364-1375" }
+
+# ---- devices -----------------------------------------------------------------------
+figure FIN_F   { layer = FIN; width = 6nm
+                 note = "[CM]:24 FINWIDTH 0.006; [GDS]:8 h = 6. GAP: thickness unknown -- [PM]:53-54 model has tfin = 21 nm, hfin = 5 nm, which contradicts a 6 nm drawn fin" }
+array  FINS    { of = FIN_F; axis = y; pitch = FP; offset = FP; count = 1..NFIN
+                 note = "per-device fins; [GDS]:8-12 fin centres 24,48 (n) and 96,120 (p); first at y = FP (INFERRED offset). [GG]:390-395 numFin per track count. GAP: CDL nfin up to 16 ([CDL]) = fingers x fins, std/0 has no finger count" }
+array  FIN_GRID { of = FIN_F; axis = y; pitch = FP; offset = FP; count = fill
+                  note = "the drawn fin field: 5 fins per 144 nm row in [GDS]:8-12 (dummy at y = 72). CONFLICT: [GG]:1331-1343 code would draw 2*NFIN+3 = 7 fins incl. y = 0 and H" }
+figure GATE_LN { layer = PC; width = 16nm; extend = BOUNDARY; extend_by = 5nm
+                 note = "[GG]:1359-1360 lyGate = -0.005, uyGate = H + 0.005; [GDS]:13" }
+array  GATES   { of = GATE_LN; axis = x; pitch = CPP; offset = 0nm; count = fill; note = "[GG]:1356 gate every CPP from x = 0; [GDS]:13-17" }
+
+cross FET {
+  gate = PC; channel = FINS; faces = [top, left, right]
+  note = "INFERRED from the FinFET naming and fin layer. CONFLICT: compact model [PM]:41 GEOMOD=2 (BSIM-CMG quadruple gate = all faces, per the BSIM-CMG manual, not in repo)"
+  size nfin { sets = FINS.count; note = "[CDL]:12 nfin=2; LVS extracts nfin = trunc(Weff_edge / 17nm) from ACTIVE, [LVS]:211,233 -- not from a fin count" }
+  model pmos_rvt { polarity = p; note = "[PM]:148 .model pmos_rvt pmos; [LVS]:208" }
+  model nmos_rvt { polarity = n; note = "[PM]:17 .model nmos_rvt nmos; [LVS]:230. LVT/SLVT/SRAMVT markers 98/97/110 exist [LVS]:38-39,67 but no library uses them" }
+}
+
+stratum DEV { layers = [FIN, ACTIVE, LISD]; polarity = [n, p]; note = "single tier; n bottom half, p top half ([DOC] img/techParam.png, [GDS]:33-34)" }
+
+# ---- connections ---------------------------------------------------------------------
+connector SD_CT  { lower = ACTIVE; cut = SDT; upper = LISD
+                   note = "[LVS]:187-188 connect LISD N_src_drn/P_src_drn by SDT; N_src_drn = ACTIVE and Nselect - gate [LVS]:181-182. GAP: lower is a derived region, std/0 only accepts a layer. SDT is a 16 x 42 nm bar [GDS]:40-44, size not fixed" }
+connector G_LIG  { lower = PC;   cut = none; upper = LIG; note = "[LVS]:189 connect LIG GATE_1 (no cut). a contact without a cut layer" }
+connector SD_LIG { lower = LISD; cut = none; upper = LIG; note = "[LVS]:190 connect LIG LISD (no cut). a contact without a cut layer" }
+connector CA_M0  { lower = [LIG, LISD]; cut = CA; upper = LANDING; size = 14nm
+                   note = "[LVS]:149-153; size = min(gateWidth, M0 width) [GG]:1365, [GDS]:18-32. Generator abstraction: [JF]:12-21 CA lower PC upper M0, enclosure 0" }
+
+# ---- cell template -------------------------------------------------------------------
+# Rails, pins and in-cell tracks are on front-side layers: probe3_finfet.stencil adds them.
+site CORE {
+  width  = CPP      # [GG]:411 SITE SIZE cppWidth BY cellHeight ; [TL]:102 SITE coresite SIZE cpp BY ch*M0P ([TL]:81)
+  height = H_ROW
+  symmetry = [y]    # [GG]:414 and [TL]:104 SYMMETRY Y (macros say SYMMETRY X Y, [GG]:1176)
+  boundary = BOUNDARY
+  band p { stratum = DEV; y = H_ROW/2 .. H_ROW;   note = "[GG]:1315-1326 NWell/PSELECT upper half; p ACTIVE y 79..125 [GDS]:33" }
+  band n { stratum = DEV; y = 0nm .. H_ROW/2; note = "NSELECT lower half; n ACTIVE y 19..65 [GDS]:34" }
+}

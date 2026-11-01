@@ -19,7 +19,7 @@ rule semantics. Python (`python/stencil`) and JavaScript
    JavaScript), pass strings or rationals for portable calls. `t.dbu(x)` /
    `t.nm(n)` convert to and from database units (JavaScript: within
    `Number.MAX_SAFE_INTEGER`, else `RangeError`). A resolved form holding an
-   integer beyond +/-(2^53 − 1) is refused (`StencilError`): JSON readers do not
+   integer beyond +/-(2^53 - 1) is refused (`StencilError`): JSON readers do not
    hold it exactly.
 3. Spec-defined meaning. Rule queries apply VOCABULARY.md section 3. A rule the
    query cannot decide raises `UnresolvedRuleError`; it is never ignored.
@@ -35,7 +35,7 @@ rule semantics. Python (`python/stencil`) and JavaScript
    mapping where a collection of names is expected, `diagnostics` that is not a
    list, `allow_incomplete=[]`), or a coordinate that is not a number, is
    `TypeError`. Names in results (rules, crosses, profile findings) are strings
-   or null. `dbu()` / `nm()` stay within +/-(2^53 − 1) in both languages. `None` / `null` / omitted
+   or null. `dbu()` / `nm()` stay within +/-(2^53 - 1) in both languages. `None` / `null` / omitted
    all mean "not given", for every optional argument and option, in both
    languages (`limit`, `ignore`, `units`, `markers`, `mode`, ...); boolean
    options must be booleans.
@@ -270,7 +270,7 @@ fet.select_model("n", markers=("ELVT",))                  # Model(name="nmos_elv
   search, ToPrimitive / ToNumber (ECMAScript whitespace, radix overflow to
   Infinity), SameValueZero and strict equality, nullish defaults. The ports' contract:
   a structurally valid resolved form; attribute values may be anything JSON
-  holds, within +/-(2^53 − 1).
+  holds, within +/-(2^53 - 1).
 - `python/tests/test_api_differential.py`, Node live: the whole public query
   API, called with generated arguments on every example and on mutated
   resolved forms (and grids) in both languages; answers (shared encoding) and

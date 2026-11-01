@@ -1,0 +1,291 @@
+stencil 0.1
+# ASAP7 device tier: wells, implants and Vt markers, fins, gates, source/drain and
+# gate local interconnect, the contacts up to the first metal, and the cell template.
+# Source keys (TLEF, CLEF, DRC, GST, ...) are listed in asap7.stencil.
+
+module { version = "0.2.0" }
+technology { grid = 0.25nm }
+
+CPP    = 54nm     # gate pitch: DRC:1194 "Exact horizontal GATE pitch is 54 nm"; CLEF:38 site width 0.054
+H_ROW  = 270nm    # row height: CLEF:38 SIZE 0.054 BY 0.270; all 213 macros are 0.27 tall (CLEF, every SIZE line)
+FP     = 27nm     # fin pitch: DRC:1165 "Exact vertical FIN pitch is 27 nm"; GST:13 fin y0 = 10+27k
+LANDING  = required(layer)   # the first metal V0 lands on (ASAP7: M1)
+BOUNDARY = required(layer)   # the cell outline marker
+
+# =============================================================================
+# Layer stack, bottom to top. GDS numbers: DRC:45-80 ("layer NAME num"),
+# cross-checked against the layers actually used in the GDS (GSUM:4-24).
+# Text datatype 251 (pin labels) from GSUM:20-24. The GDS has no separate pin
+# datatype, so gds_pin is never set.
+# Front-end layer NAMES come from DRC:45-80. TLEF:65-81 knows only
+# nwell/pwell/Gate/Active (MASTERSLICE) and has no FIN, GCUT, SDT, LISD or LIG.
+# =============================================================================
+
+# -- wells / implants / Vt markers (markers: drawn or derived, not conductors)
+layer WELL    { role = marker; gds = [1, 0];  gds_label = [1, 251]       # DRC:45; GSUM:4,20 (label 'VDD', GINV:2)
+                from = band(p)                                         # inferred: all 220 shapes are y=135..270 (GST:5,7), = PSELECT extent
+                note = "N-well. TLEF:65-68 'nwell' (LEF58_TYPE NWELL)." }
+layer PWELL   { role = marker; gds_label = [3, 251]                    # GSUM:21: layer 3 carries only text 'VSS' (GINV:13); no shapes, no DRC layer
+                note = "Substrate/p-well label only. TLEF:70-73 'pwell' MASTERSLICE. Not drawn." }
+layer NSELECT { role = marker; gds = [12, 0]; from = band(n) }         # DRC:51; inferred from GST:35-37 (y=0..135)
+layer PSELECT { role = marker; gds = [13, 0]; from = band(p) }         # DRC:52; inferred from GST:41-43 (y=135..270)
+layer LVT     { role = marker; gds = [98, 0]                           # DRC:54; present only in the L library (GSUM_L:18)
+                note = "Whole-cell marker = BOUNDARY extent in *_L cells (inferred: GINV vs gds_L_INVx1 differ only by 98/0 0,0..648,1080)" }
+layer SLVT    { role = marker; gds = [97, 0] }                         # DRC:53; only in SL library (GSUM_SL:18)
+layer SRAMVT  { role = marker; gds = [110, 0] }                        # DRC:56; only in SRAM library (GSUM_SRAM:19)
+layer SRAMDRC { role = marker; gds = [99, 0]                           # DRC:55; not used by any cell GDS (GSUM)
+                note = "SRAM rule-relaxation marker; selects the SRAM.* rule variants" }
+layer DUMMY   { role = marker; gds = [8, 0] }                          # DRC:57; not used by any cell GDS (GSUM)
+
+# -- device layers
+layer FIN     { role = channel; gds = [2, 0] }                         # DRC:46; GSUM:5
+layer ACTIVE  { role = channel; gds = [11, 0]                          # DRC:49; GSUM:8. TLEF:79-81 'Active'
+                note = "Selects which FINs form devices (DRC:837-840 FIN_KEPT = FIN AND grown ACTIVE); also the S/D conductor (DRC:157)" }
+layer GATE    { role = conductor; direction = vertical; gds = [7, 0] } # DRC:47; GST:15 all 2744 shapes vertical. TLEF:75-77 'Gate'
+layer GCUT    { role = marker; gds = [10, 0]                           # DRC:48
+                note = "Gate-cut mask: removes GATE (DRC:126 GATE_NGC = GATE NOT GCUT). Drawn at both rails and mid-row (GST:25 y0=-22,248,113; dy=44)" }
+
+# -- middle of line (local interconnect). Real order is not known: LISD and LIG
+#    are placed below V0 (DRC:113-119 diagram). LISD-below-LIG is arbitrary: the
+#    deck connects them directly (DRC:158) and the diagram draws them side by side.
+layer SDT     { role = cut; gds = [88, 0]                              # DRC:50; GSUM:17
+                note = "Source/drain trench contact: ACTIVE to LISD (DRC:157 CONNECT ACTIVE_SD LISD BY SDT)" }
+layer LISD    { role = conductor; direction = vertical; gds = [17, 0]  # DRC:59; GST:51 4014 of 4123 shapes vertical (inferred direction)
+                note = "Local interconnect on source/drain" }
+layer LIG     { role = conductor; direction = none; gds = [16, 0]      # DRC:58; GST:45 1271 horiz / 67 vert / 520 square (inferred)
+                note = "Local interconnect on gate; also a full-width strip under both rails (GINV:25-26, y=-8..8 nm)" }
+layer V0      { role = cut; gds = [18, 0] }                            # DRC:60; TLEF:83-87
+
+# =============================================================================
+# FinFET device
+# =============================================================================
+figure FIN_F {
+  layer = FIN
+  width = 7nm                     # DRC:1154-1156 "Exact vertical FIN width is 7 nm"; GST:11 (all 2210 fins 7nm)
+  note  = "thickness (fin height) is unknown: no readable source (the qrc files are Cadence 'hideprocess' binaries). So W_eff cannot be computed."
+}
+# The drawn FIN layer is a full-width fin grid, 10 fins per row, in every cell:
+array FIN_GRID {
+  of = FIN_F; axis = y; pitch = FP
+  offset = 13.5nm                 # inferred: fin bottoms at y=10+27k (GST:13); centre = 10+3.5
+  count = 10                      # inferred: 10 distinct fin rows per 270nm row (GST:13; GINV:3-12)
+}
+# The device's fins are a subset of that grid. ACTIVE selects them:
+array FINS {
+  of = FIN_F; axis = y; pitch = FP
+  offset = 40.5nm                 # inferred, n band: n ACTIVE always starts at y=27 (GST:31), so the first device fin is grid fin 1
+  count = 1..3                    # inferred: ACTIVE heights only 27/54/81 nm = 1..3 fins (GST:29); CDL nfin is fins x fingers (up to 72)
+  note = "p band is mirrored: p ACTIVE ends at y=243 and grows downward (GST:31 y0=162/189/216). One array offset cannot express either the mirroring or the anchoring of a fin subset to the rail side."
+}
+figure ACTIVE_F {
+  layer = ACTIVE
+  width = one_of(27nm, 54nm, 81nm) # DRC:1265-1290 "vertical width ... integer multiple of 27 nm"; library uses 27/54/81 only (GST:29)
+  note  = "Must equal 27nm * FINS.count (ACTIVE.FIN.EX.1 DRC:1255: 10nm past the fin each side; 2*10+7+27*(n-1)). std/0 cannot state that equality."
+}
+figure GATE_LN {
+  layer = GATE
+  width = 20nm                    # DRC:1182-1184 "Exact horizontal GATE width is 20 nm"; GST:16; CDL l=20n (CDL:2053)
+  extend = ACTIVE
+  extend_by = 4nm                 # DRC:1236-1237 (VAR_EUV_MISALI DRC:273). Real cells run gates through the full row (-5..275nm, GST:17,19) and cut them with GCUT
+}
+array GATES {
+  of = GATE_LN; axis = x; pitch = CPP
+  offset = 27nm                   # inferred: gate x0 = 17+54k, width 20 (GST:18), so the centre is CPP/2
+  count = fill
+}
+figure SD_LI {
+  layer = LISD
+  width = 24nm                    # DRC:1818 LISD.W.1; GST:52 (3946 of 4123 are 24nm wide)
+}
+array SD_GRID {
+  of = SD_LI; axis = x; pitch = CPP
+  offset = 0nm                    # inferred: LISD/SDT/V0 centres at 54k nm (GST:54 x0=42+54k; GST:84; GST:60 x0=45+54k), midway between gates
+  count = fill
+}
+
+cross FET {
+  gate = GATE
+  channel = FINS
+  faces = [top, left, right]      # inferred: tri-gate FinFET. No source on disk states the gated faces
+  size nfin { sets = FINS.count } # CDL:2053 'nfin=3'. CDL w = 27nm*nfin for all 2570 devices (CDL) is derived, not settable
+  model nmos_rvt  { polarity = n }                     # CDL:2053; R library: no Vt marker (GSUM)
+  model pmos_rvt  { polarity = p }                     # CDL:2054
+  model nmos_lvt  { polarity = n; marker = LVT }       # CDL_L:33
+  model pmos_lvt  { polarity = p; marker = LVT }       # CDL_L:37
+  model nmos_slvt { polarity = n; marker = SLVT }      # CDL_SL:33
+  model pmos_slvt { polarity = p; marker = SLVT }      # CDL_SL:37
+  model nmos_sram { polarity = n; marker = SRAMVT }    # CDL_SRAM:33
+  model pmos_sram { polarity = p; marker = SRAMVT }    # CDL_SRAM:37
+}
+
+stratum DEV {
+  layers = [FIN, ACTIVE, SDT, LISD, LIG]
+  polarity = [n, p]
+}
+
+# =============================================================================
+# Connectors. BEOL vias are the TLEF fixed "Default" VIAs: cut = cut rect,
+# enclose = metal half-size minus cut half-size, as [x, y].
+# =============================================================================
+connector SD_CONTACT { lower = ACTIVE; cut = SDT; upper = LISD         # DRC:157
+  note = "SDT width 24nm (DRC:1706). Its height equals the ACTIVE height (DRC:1799-1801, 27nm*nfin), so no fixed 'size' exists." }
+connector GATE_LIG   { lower = GATE; cut = none; upper = LIG }         # DRC:159 CONNECT GATE_NGC LIG (direct)
+connector LISD_LIG   { lower = LISD; cut = none; upper = LIG }         # DRC:158 CONNECT LISD LIG (direct)
+connector VIA0 { lower = [LISD, LIG]; cut = V0; upper = LANDING             # DRC:160-161
+  size = 18nm                                                          # TLEF:86; DRC:2031; GST:58-59 (8704 cuts, all 18x18)
+  enclose_upper = 0nm                                                  # DRC:2145: V0 is exactly as wide as M1 across. Along M1: 5&5 or 5&0 (rule V0_M1_EN)
+  note = "TLEF defines no VIA for V0 (TLEF:623-704 starts at VIA12). Lower enclosure: LISD encloses V0 by 3nm on two opposite sides (DRC:2090-2095)."
+}
+
+# =============================================================================
+# Site (cell template)
+# =============================================================================
+# Rails, pins and in-cell tracks are on front-side layers: asap7.stencil adds them.
+site asap7sc7p5t {
+  width  = CPP                    # CLEF:38
+  height = H_ROW                  # CLEF:38
+  symmetry = [y]                  # CLEF:39 'SYMMETRY Y' (macros add X: CLEF:9919)
+  boundary = BOUNDARY             # GST:87-91
+  band n { stratum = DEV; y = 0nm .. 135nm }             # inferred: NSELECT y=0..135 (GST:35-37); nmos sources on VSS (CDL:2053), VSS at the bottom (CLEF:9947)
+  band p { stratum = DEV; y = 135nm .. 270nm }           # inferred: PSELECT and WELL y=135..270 (GST:41-43, GST:5-7)
+  note = "Single track height: all 213 macros are 270nm (CLEF). 7.5T = 270/36. FEOL rail parts (the LIG strip under each rail, GINV:25-26, and the GCUT at each rail, GINV:17,19) cannot be added: rail children are keyed by net name."
+}
+
+# =============================================================================
+# Derived areas used by the deck, as regions. A rule can name a region in `on`;
+# the rules below follow the deck and are written on drawn layers.
+# =============================================================================
+region GATE_EFF { from = minus(GATE, GCUT) }                           # DRC:126 GATE_NGC
+region CHANNEL  { from = intersect(GATE_EFF, ACTIVE) }                 # DRC:179 CHANNELR = ACTIVE AND GATE_NGC
+region SD       { from = minus(ACTIVE, GATE_EFF) }                     # DRC:149 (drops the INTERACT qualifier)
+region FIN_KEPT { from = intersect(FIN, grow(ACTIVE, 19nm))            # DRC:837-840
+                  note = "inexact: the deck expands only ACTIVE's vertical edges by 19nm; std/0 grow is isotropic" }
+
+# =============================================================================
+# Design rules (intent = pdk). Mapping notes:
+#  * Rule kinds are defined in VOCABULARY.md section 3: on = [inner, outer]
+#    for enclosure, on = [extending, base] for extension.
+#  * Direction-specific values (the deck's HE/VE) are separate rules with
+#    `axis = x` (horizontal) / `axis = y` (vertical), named NAME_X / NAME_Y.
+#  * Tip-to-tip, via-track and end-cap contexts have no std/0 kind yet; those
+#    rules use extension kinds (x_eol_tip, x_via_track_spacing,
+#    x_end_cap_enclosure) and keep their values.
+#  * Areas are written as a product of lengths: 504nm * 1nm is 504 nm^2.
+#  * Rules with no std/0 kind are listed in the notes in this file, plus two x_
+#    objects at the end of it (VT_EXCLUSIVE, VT_FLAVOURS).
+# =============================================================================
+
+# -- WELL
+rule WELL_W_X   { kind = width;   on = WELL; axis = x; value = 108nm }   # DRC:1113-1119
+rule WELL_W_Y   { kind = width;   on = WELL; axis = y; value = 54nm }   # DRC:1113-1119
+rule WELL_S_Y   { kind = spacing; on = WELL; axis = y; value = 108nm }   # DRC:1123-1129
+rule WELL_S_X   { kind = spacing; on = WELL; axis = x; value = 54nm }   # DRC:1123-1129
+rule WELL_A   { kind = area;    on = WELL; value = 5832nm * 1nm }                                         # DRC:1133-1134
+rule ACTIVE_WELL_EN { kind = enclosure; on = [ACTIVE, WELL]; value = 27nm }                                      # DRC:1326-1328
+rule ACTIVE_WELL_S  { kind = spacing;   on = [ACTIVE, WELL]; value = 27nm }                                      # DRC:1315-1316
+rule WELL_GATE_EX_X   { kind = extension; axis = x; on = [WELL, GATE];   value = 7nm }                                       # DRC:1143-1150 (VAR_OPT_MISALI DRC:275)
+rule WELL_GATE_EX_Y   { kind = extension; axis = y; on = [WELL, GATE];   value = 7nm }                                       # DRC:1143-1150 (VAR_OPT_MISALI DRC:275)
+
+# -- FIN / GATE / ACTIVE / GCUT
+rule FIN_LEN   { kind = min_length; on = FIN;  value = 108nm }                                                   # DRC:1160-1161
+rule GATE_LEN  { kind = min_length; on = GATE; value = 40nm }                                                    # DRC:1188-1189 (VAR_OPT_RES DRC:278)
+rule GATE_S    { kind = spacing;    on = GATE; value = 34nm }                                                    # DRC:1204-1205
+rule GATE_ACTIVE_EX { kind = extension; axis = y; on = [GATE, ACTIVE]; value = 4nm }                                       # DRC:1236-1237
+rule ACTIVE_GATE_EX { kind = extension; axis = x; on = [ACTIVE, GATE]; value = 25nm }                                      # DRC:1242-1244
+rule ACTIVE_GATE_S  { kind = spacing; on = [ACTIVE, GATE]; value = 9nm                                           # DRC:1249-1251
+                      note = "only to GATE that does not interact with ACTIVE (not expressible)" }
+rule FIN_ACTIVE_EN  { kind = enclosure; on = [FIN, ACTIVE]; value = 10nm }                                       # DRC:1255-1256
+rule ACTIVE_W_Y  { kind = width;   on = ACTIVE; axis = y; value = 27nm }   # DRC:1260-1261, DRC:1294-1295
+rule ACTIVE_W_X  { kind = width;   on = ACTIVE; axis = x; value = 16nm }   # DRC:1260-1261, DRC:1294-1295
+rule ACTIVE_S_Y  { kind = spacing; on = ACTIVE; axis = y; value = 27nm }   # DRC:1299-1300, DRC:1310-1311
+rule ACTIVE_S_X  { kind = spacing; on = ACTIVE; axis = x; value = 38nm }   # DRC:1299-1300, DRC:1310-1311
+rule ACTIVE_A  { kind = area;    on = ACTIVE; value = 864nm * 1nm }                                       # DRC:1338-1340
+rule GCUT_W    { kind = width;   on = GCUT; value = 17nm }                                                       # DRC:1394-1395 (vertical)
+rule GCUT_S    { kind = spacing; on = GCUT; value = 35nm }                                                       # DRC:1417-1418 (vertical)
+rule GCUT_GATE_EX { kind = extension; axis = x; on = [GCUT, GATE]; value = 17nm }                                          # DRC:1405-1406
+rule GCUT_GATE_S  { kind = spacing; on = [GCUT, GATE]; value = 17nm; note = "only to GATE the GCUT does not cut" }  # DRC:1410-1412
+rule GCUT_CH_S    { kind = spacing; on = [GCUT, ACTIVE]; value = 4nm                                             # DRC:1399-1400
+                    note = "deck measures to CHANNELR (region), not to ACTIVE; std/0 'on' cannot name a region" }
+
+# -- implants and Vt markers (the deck uses identical rule sets for all five, lines 1438-1671)
+rule NSELECT_W_X  { kind = width; on = NSELECT; axis = x; value = 108nm }   # DRC:1440-1446
+rule NSELECT_W_Y  { kind = width; on = NSELECT; axis = y; value = 54nm }   # DRC:1440-1446
+rule PSELECT_W_X  { kind = width; on = PSELECT; axis = x; value = 108nm }   # DRC:1486-1492
+rule PSELECT_W_Y  { kind = width; on = PSELECT; axis = y; value = 54nm }   # DRC:1486-1492
+rule LVT_W_X      { kind = width; on = LVT;     axis = x; value = 108nm }   # DRC:1583-1589
+rule LVT_W_Y      { kind = width; on = LVT;     axis = y; value = 54nm }   # DRC:1583-1589
+rule SLVT_W_X     { kind = width; on = SLVT;    axis = x; value = 108nm }   # DRC:1537-1543
+rule SLVT_W_Y     { kind = width; on = SLVT;    axis = y; value = 54nm }   # DRC:1537-1543
+rule SRAMVT_W_X   { kind = width; on = SRAMVT;  axis = x; value = 108nm }   # DRC:1628-1634
+rule SRAMVT_W_Y   { kind = width; on = SRAMVT;  axis = y; value = 54nm }   # DRC:1628-1634
+rule NSELECT_EN_X { kind = enclosure; on = [ACTIVE, NSELECT]; axis = x; value = 46nm }   # DRC:1450-1458
+rule NSELECT_EN_Y { kind = enclosure; on = [ACTIVE, NSELECT]; axis = y; value = 27nm }   # DRC:1450-1458
+rule PSELECT_EN_X { kind = enclosure; on = [ACTIVE, PSELECT]; axis = x; value = 46nm }   # DRC:1496-1504
+rule PSELECT_EN_Y { kind = enclosure; on = [ACTIVE, PSELECT]; axis = y; value = 27nm }   # DRC:1496-1504
+rule LVT_EN_X     { kind = enclosure; on = [ACTIVE, LVT];     axis = x; value = 46nm }   # DRC:1593-1601
+rule LVT_EN_Y     { kind = enclosure; on = [ACTIVE, LVT];     axis = y; value = 27nm }   # DRC:1593-1601
+rule SLVT_EN_X    { kind = enclosure; on = [ACTIVE, SLVT];    axis = x; value = 46nm }   # DRC:1547-1555
+rule SLVT_EN_Y    { kind = enclosure; on = [ACTIVE, SLVT];    axis = y; value = 27nm }   # DRC:1547-1555
+rule SRAMVT_EN_X  { kind = enclosure; on = [ACTIVE, SRAMVT];  axis = x; value = 46nm }   # DRC:1638-1646
+rule SRAMVT_EN_Y  { kind = enclosure; on = [ACTIVE, SRAMVT];  axis = y; value = 27nm }   # DRC:1638-1646
+rule NSELECT_GATE_EX_X { kind = extension; axis = x; on = [NSELECT, GATE]; value = 7nm }   # DRC:1474-1482 (VAR_OPT_MISALI DRC:275; vertical uses VAR_OPT_EUV_MISALI_GRDBND = 7nm, DRC:277)
+rule NSELECT_GATE_EX_Y { kind = extension; axis = y; on = [NSELECT, GATE]; value = 7nm }   # DRC:1474-1482 (VAR_OPT_MISALI DRC:275; vertical uses VAR_OPT_EUV_MISALI_GRDBND = 7nm, DRC:277)
+rule PSELECT_GATE_EX_X { kind = extension; axis = x; on = [PSELECT, GATE]; value = 7nm }   # DRC:1520-1528
+rule PSELECT_GATE_EX_Y { kind = extension; axis = y; on = [PSELECT, GATE]; value = 7nm }   # DRC:1520-1528
+rule LVT_GATE_EX_X     { kind = extension; axis = x; on = [LVT, GATE];     value = 7nm }   # DRC:1617-1624
+rule LVT_GATE_EX_Y     { kind = extension; axis = y; on = [LVT, GATE];     value = 7nm }   # DRC:1617-1624
+rule SLVT_GATE_EX_X    { kind = extension; axis = x; on = [SLVT, GATE];    value = 7nm }   # DRC:1571-1579
+rule SLVT_GATE_EX_Y    { kind = extension; axis = y; on = [SLVT, GATE];    value = 7nm }   # DRC:1571-1579
+rule SRAMVT_GATE_EX_X  { kind = extension; axis = x; on = [SRAMVT, GATE];  value = 7nm }   # DRC:1662-1670
+rule SRAMVT_GATE_EX_Y  { kind = extension; axis = y; on = [SRAMVT, GATE];  value = 7nm }   # DRC:1662-1670
+
+# -- SDT / LISD / LIG
+rule SDT_W_X   { kind = width;   on = SDT; axis = x; value = 24nm }   # DRC:1706-1713
+rule SDT_W_Y   { kind = width;   on = SDT; axis = y; value = 27nm }   # DRC:1706-1713
+rule SDT_S   { kind = spacing; on = SDT; value = 30nm }                                                       # DRC:1754-1755
+rule SDT_GATE_S { kind = spacing; on = [SDT, GATE]; value = 5nm }                                             # DRC:1760-1761
+rule LISD_W  { kind = width;   on = LISD; value = 24nm }                                                      # DRC:1818-1819
+rule LISD_S  { kind = spacing; on = LISD; value = 18nm; prl = 36nm; note = "side-to-side: both edges > 36nm (DRC:224)" }  # DRC:1824-1826
+rule LISD_EOL { kind = x_eol_tip; on = LISD; width_below = 36nm                                             # DRC:224-227 edge classes
+  case tip_to_side      { value = 25nm }                                                                      # DRC:1831-1833
+  case tip_to_tip_wide  { value = 27nm }                                                                      # DRC:1838-1841
+  note = "deck: tip = edge length <= 36nm (std/0 does not define < vs <=)" }
+rule LISD_A  { kind = area; on = LISD; value = 648nm * 1nm }                                           # DRC:1854-1855
+rule LIG_W   { kind = width;   on = LIG; value = 16nm }                                                       # DRC:1868-1869
+rule LIG_S   { kind = spacing; on = LIG; value = 18nm; prl = 36nm; note = "side-to-side: both edges > 36nm (DRC:229)" }   # DRC:1874-1876
+rule LIG_EOL { kind = x_eol_tip; on = LIG; width_below = 36nm                                               # DRC:229-232
+  case tip_to_side       { value = 25nm }                                                                     # DRC:1881-1883
+  case tip_to_tip_wide   { value = 27nm }                                                                     # DRC:1888-1891
+  case tip_to_tip_narrow { value = 31nm }                                                                     # DRC:1896-1907 (narrow = edge < 24nm)
+}
+rule LIG_LISD_S { kind = spacing; on = [LIG, LISD]; value = 14nm; same_net = false }                          # DRC:1912-1914
+rule LIG_SDT_S  { kind = spacing; on = [LIG, SDT];  value = 14nm; same_net = false }                          # DRC:1926-1928
+rule LIG_GATE_S_Y { kind = spacing; on = [LIG, GATE]; axis = y; value = 14nm }   # DRC:1933-1943
+rule LIG_GATE_S_X { kind = spacing; on = [LIG, GATE]; axis = x; value = 17nm   # DRC:1933-1943
+                  note = "to GATE not cut by GCUT" }
+rule LIG_GCUT_S { kind = spacing; on = [LIG, GCUT]; value = 5nm }                                             # DRC:1956-1957
+rule LIG_A      { kind = area; on = LIG; value = 324nm * 1nm }                                         # DRC:1963-1964
+rule LIG_GATE_EX { kind = extension; axis = x; on = [LIG, GATE]; value = 1nm; note = "on both opposite sides" }         # DRC:2007-2009
+
+# -- V0 / M1
+rule V0_W  { kind = width; on = V0; value = 18nm }                                                            # DRC:2030-2031
+rule V0_S  { kind = x_via_track_spacing; on = V0                                                                      # DRC:2038-2041 (description)
+  case same_track         { value = 18nm }
+  case parallel_unaligned { value = 27nm }
+  case parallel_aligned   { value = 18nm }
+  note = "DRC code (DRC:2047-2050) checks derived V0 masks at 17/18nm; the description and the code differ" }
+rule V0_M1_EN   { kind = x_end_cap_enclosure; on = [V0, LANDING]; case end_cap { value = 5nm }; case side { value = 0nm }    # DRC:2077-2085
+                  note = "5&5 or 5&0 on the two ends along M1; side = 0 (DRC:2145 V0 as wide as M1)" }
+rule V0_LISD_EN { kind = enclosure; on = [V0, LISD]; value = 3nm; note = "on at least two opposite sides" }  # DRC:2090-2095
+
+# =============================================================================
+# Extensions: facts std/0 has no slot for, kept as structured data so a tool
+# can see them. Each one produces a W001 warning (expected).
+# =============================================================================
+x_asap7_rule VT_EXCLUSIVE {       # DRC:1672-1677 VT.AUX.2; DRC:1530-1533 NSELECT.PSELECT.AUX.1
+  x_kind = must_not_overlap; x_on = [LVT, SLVT, SRAMVT]
+  note = "Vt markers are mutually exclusive; NSELECT and PSELECT may not overlap"
+}
+x_asap7_variant VT_FLAVOURS {     # GSUM_L:18, GSUM_SL:18, GSUM_SRAM:19; CDL_*:33,37
+  note = "R/L/SL/SRAM libraries share identical geometry (GINV vs gds_L_INVx1: one extra line). A variant adds ONE marker shape equal to BOUNDARY (none for R) and renames the models. Cell-name suffix _R/_L/_SL/_SRAM (CLEF MACRO names)."
+}

@@ -85,7 +85,7 @@ test('a default that depends on another parameter types the binding by its evalu
   assert.ok(codes(project({ 'main.stencil': T + 'import "lib" as l { MP = 2 }', 'lib.stencil': lib })).includes('C014'));
 });
 
-// ---- M3a review ------------------------------------------
+// ---- ------------------------------------------
 const both = (files, imports) => [imports.join('\n'), [...imports].reverse().join('\n')].map((o) => project({ ...files, 'main.stencil': T + o + (files.__tail ?? '') }));
 
 test('R1: identical drops are idempotent, in every form and both orders', () => {
@@ -140,7 +140,7 @@ test('follow-ups: aliases are not modules, own-property kinds only, required(T) 
   }
 });
 
-// ---- M3a round 2 ---------------------------------------
+// ---- ---------------------------------------
 test('R2-1: repeated drops are idempotent when base is present', () => {
   const r = project({ 'main.stencil': T + 'layer A { role = conductor }\nlayer B { base = A; masks = 2 }\n&B { drop masks }\n&B { drop masks }' });
   assert.deepEqual(codes(r), [], JSON.stringify(r.diags));
@@ -181,7 +181,7 @@ test('R2 follow-up: required(T) is rejected in import option blocks', () => {
   assert.equal(errors(r).filter((d) => d.code === 'C014').length, 2, JSON.stringify(r.diags));
 });
 
-// ---- M3a round 3 ---------------------------------------
+// ---- ---------------------------------------
 test('R3-1: a deferred tombstone without a retained object gives C050 in both orders', () => {
   const common = H + 'layer L { role = conductor }\nsite A {\n  width = 1nm; height = 1nm\n  rail R { layer = L; edge = top }\n}\nsite S { base = A }';
   for (const patch of ['&c.S.R.TYPO { x_foo = 1 }', '&c.S.R { drop TYPO }', '&c.S.R { edge = required(name) }']) {
@@ -225,7 +225,7 @@ test('R3-4: a nested patch drop that removes a real value survives the base merg
   }
 });
 
-// ---- M3a round 4 ---------------------------------------
+// ---- ---------------------------------------
 test('R4-1: an own import dropping the parent is C051 in both orders, next to a sibling tombstone', () => {
   const files = {
     'common.stencil': COMMON,
@@ -263,7 +263,7 @@ test('an importer may set an attribute its import dropped', () => {
   assert.equal(obj(r, 'S').children[0].attrs.edge, 'bottom');
 });
 
-// ---- M3a round 5 ---------------------------------------
+// ---- ---------------------------------------
 const COMMON5 = H + 'layer L { role = conductor }\nsite S {\n  width = 1nm; height = 1nm\n  rail R { layer = L; edge = top; width = 2nm }\n}';
 const perms = (xs) => (xs.length <= 1 ? [xs] : xs.flatMap((x, i) => perms([...xs.slice(0, i), ...xs.slice(i + 1)]).map((p) => [x, ...p])));
 const allOrders = (files, imports, tail = '') => perms(imports).map((o) => ({ order: o.join(' | '), r: project({ ...files, 'main.stencil': T + o.join('\n') + tail }) }));
@@ -338,7 +338,7 @@ test('R5-4: a descendant drop names something real even if a sibling dropped its
   }
 });
 
-// ---- M3a round 6 ---------------------------------------
+// ---- ---------------------------------------
 test('R6-1: a partial restoration keeps what the original declared, for later drops, in every order', () => {
   for (const aSrc of ['drop c.S.R', '&c.S { drop R }']) {
     const files = {
@@ -378,7 +378,7 @@ test('R6-2: children added by a patch are ordinary objects afterwards', () => {
   }
 });
 
-// ---- M3a round 7 ---------------------------------------
+// ---- ---------------------------------------
 test('R7-1: nested merges also accept names the replaced child declared, in every order', () => {
   for (const aSrc of ['drop c.S.R', '&c.S { drop R }']) {
     const files = {
@@ -407,7 +407,7 @@ test('R7-2: children of a patch body are checked after the body merges, at any d
   assert.ok(codes(bad).includes('C050'), JSON.stringify(bad.diags));
 });
 
-// ---- M3a round 8 ---------------------------------------
+// ---- ---------------------------------------
 test('R8-1: restoration history reaches the replaced child\'s descendants, in every order', () => {
   const common = H + 'x_group G {\n  x_child C {\n    x_leaf L { x_value = 1 }\n  }\n}';
   for (const aSrc of ['drop c.G.C', '&c.G { drop C }']) {
@@ -434,7 +434,7 @@ test('R8-2: a drop the same patch body sets again is still checked', () => {
   assert.equal(obj(ok, 'S').children[0].attrs.width, 2);
 });
 
-// ---- M3a round 9: drop validity is decided once,
+// ---- : drop validity is decided once,
 // after inheritance, from what the dropping module can see ------------------------------
 test('R9-1: history survives repeated replacement, in every order', () => {
   const common = H + 'x_group G {\n  x_child C {\n    x_leaf L { x_value = 1 }\n  }\n}';
@@ -474,7 +474,7 @@ test('a drop inside an inherited child names what the base declares (formerly de
   assert.ok(codes(bad).includes('C050'), JSON.stringify(bad.diags));
 });
 
-// ---- M3a round 10 -------------------------------------
+// ---- -------------------------------------
 test('R10-1: removing an inheriting object does not invalidate its drops', () => {
   for (const src of [
     'layer A { role = conductor; masks = 2 }\nlayer B { base = A; drop masks }\ndrop B',
@@ -505,7 +505,7 @@ test('R10-3: qualified drops follow source order like in-patch drops', () => {
   assert.deepEqual(codes(project({ 'main.stencil': T + 'layer L { role = conductor }\n&L { masks = 2 }\ndrop L.masks' })), []);
 });
 
-// ---- M3a round 11 -------------------------------------
+// ---- -------------------------------------
 test('R11-1: a base into the object\'s own descendant terminates', () => {
   const r = project({ 'main.stencil': T + 'x_group A {\n  base = A.C\n  drop x_value\n  x_group C { x_value = 1 }\n}' });
   assert.ok(Array.isArray(r.diags));
@@ -533,7 +533,7 @@ test('R11-3: top-level drops follow source order too', () => {
   assert.deepEqual(codes(r), [], JSON.stringify(r.diags));
 });
 
-// ---- M3a round 12 -------------------------------------
+// ---- -------------------------------------
 test('R12-1: long acyclic inheritance chains validate drops', () => {
   for (const n of [17, 18, 40]) {
     const body = ['layer A0 { role = conductor; masks = 2 }', ...Array.from({ length: n }, (_, i) => `layer A${i + 1} { base = A${i} }`)];
@@ -577,7 +577,7 @@ test('drop validation stays fast on deep nested inheritance (object and child bo
   assert.deepEqual(codes(r), ['C050'], JSON.stringify(r.diags));   // only the missing name
 });
 
-// ---- M3a round 13: inherited names are looked up in
+// ---- : inherited names are looked up in
 // the materialized inheritance, not searched symbolically -----------------------------------
 test('R13-1: a chain that grows before it shrinks validates the drop', () => {
   const chain = 'x_group B0 { x_value = 1 }\nx_group B1 { x_group C { base = B0 } }\nx_group B2 { x_group C { base = B1 } }\nx_group B3 { x_group C { base = B2 } }\nx_group A4 { x_group C { base = B3 } }\nx_group A3 { base = A4.C }\nx_group A2 { base = A3.C }\nx_group A1 { base = A2.C }\n';
@@ -608,7 +608,7 @@ test('R13-3: an unnamed object wins over an import alias of the same name, as in
   }
 });
 
-// ---- M3a round 14 -------------------------------------
+// ---- -------------------------------------
 test('R14-1: unrelated patches of a base target do not validate a drop', () => {
   const files = { 'common.stencil': H + 'layer A { role = conductor }\nlayer B { base = A }', 'left.stencil': H + 'import "common" as c\n&c.A { masks = 2 }' };
   for (const drop of ['&c.B { drop masks }', 'drop c.B.masks']) {
@@ -647,7 +647,7 @@ test('R14-4: errors on surviving unnamed objects are reported, whatever is dropp
   }
 });
 
-// ---- M3a round 15 -------------------------------------
+// ---- -------------------------------------
 test('R15-1: a qualified drop prefers the local unnamed root over an import alias', () => {
   const r = project({ 'empty.stencil': H + 'x_leaf C { x_other = 2 }', 'main.stencil': T + 'x_group { x_leaf C { x_value = 1 } }\nimport "empty" as x_group\ndrop x_group.C' });
   assert.deepEqual(codes(r), [], JSON.stringify(r.diags));
@@ -686,7 +686,7 @@ test('R14-4 follow-up: kind mismatches and cycles on unnamed roots are reported'
   }
 });
 
-// ---- M3a round 16 -------------------------------------
+// ---- -------------------------------------
 test('R16-1: historical base lookup terminates', () => {
   for (const [src, want] of [
     ['x_group Z { x_value = 1 }\nx_group A { base = A.C; drop x_value }\n&A { base = Z }', []],
@@ -712,7 +712,7 @@ test('R16-2: local names win over an import alias at every level', () => {
   assert.ok(codes(bad).includes('C050'), JSON.stringify(bad.diags));
 });
 
-// ---- M3a round 17 -------------------------------------
+// ---- -------------------------------------
 test('R17-1: lookups are reused, not lost, across several base edges', () => {
   const pre = 'x_group A {\n  x_group C {\n    x_group D { x_value = 1 }\n  }\n}\nx_group B { base = A }\n';
   for (const tail of [
@@ -727,7 +727,7 @@ test('R17-1: lookups are reused, not lost, across several base edges', () => {
   }
 });
 
-// ---- M3a round 18: inheritance as a fixed point ----------
+// ---- : inheritance as a fixed point ----------
 test('R18-1: cyclic historical bases still find every route', () => {
   const pre = 'x_group Z {}\nx_group X { x_group C { x_group D { x_value = 1 } } }\nx_group A { base = B }\nx_group B { base = A }\n&A { base = X }\n&A { base = Z }\n&B { base = Z }\n';
   for (const tail of [
@@ -756,7 +756,7 @@ test('R18-2: repeated base edges do not blow up', () => {
   assert.equal(r.resolved.complete, true);
 });
 
-// ---- M3a round 19: bounded cost --------------------------
+// ---- : bounded cost --------------------------
 test('R19-1: drop validation cost stays small with many modules and deep unrelated nesting', () => {
   for (const [mods, depth, drop] of [[200, 200, true], [200, 200, false], [1, 250, true]]) {   // blocks nest at most 256 deep
     const files = { 'main.stencil': T + 'x_group C {'.repeat(depth) + 'x_keep = 1' + '}'.repeat(depth) };
@@ -772,7 +772,7 @@ test('R19-1: drop validation cost stays small with many modules and deep unrelat
   }
 });
 
-// ---- M3a round 20: demand-driven views ------------------
+// ---- : demand-driven views ------------------
 test('R20-1: a shared tree of unproductive bases does not slow down unrelated drops', () => {
   for (const [nested, drop] of [[true, true], [true, false], [false, true]]) {
     const files = {
@@ -791,7 +791,7 @@ test('R20-1: a shared tree of unproductive bases does not slow down unrelated dr
   }
 });
 
-// ---- M3a round 21: bounded memory; bounded nesting ------
+// ---- : bounded memory; bounded nesting ------
 test('R21-1: a demanded leaf under the deepest legal tree of bases stays small', () => {
   for (const leaf of ['x_group Leaf {base=V;drop x_value}', 'x_group Leaf {base=V}', 'x_group Leaf {base=V;x_value=2;drop x_value}']) {
     const src = 'x_group Z {}\nx_group V {x_value=1}\n' + 'x_group C {base=Z;'.repeat(250) + leaf + '}'.repeat(250);
@@ -811,7 +811,7 @@ test('nesting deeper than 256 levels is an error, not a crash', () => {
   }
 });
 
-// ---- M3a round 22 -------------------------------------
+// ---- -------------------------------------
 test('R22-1: many demanded leaves under a deep tree of bases: incremental solving', () => {
   for (const [leaf, nest] of [['drop', true], ['none', true], ['own', true], ['drop', false]]) {
     const body = (i) => (leaf === 'drop' ? `x_group L${i} {base=V;drop x_value}` : leaf === 'none' ? `x_group L${i} {base=V}` : `x_group L${i} {base=V;x_value=2;drop x_value}`);

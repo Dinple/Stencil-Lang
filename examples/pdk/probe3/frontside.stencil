@@ -1,0 +1,49 @@
+stencil 0.1
+# PROBE3.0 front-side routing: M0 .. M2, the vias between them, and their rules.
+# Source keys ([CM], [LVS], [GG], [TL], [GDS], ...) are listed in probe3_finfet.stencil.
+
+module { version = "0.2.0" }
+technology { grid = 0.5nm }
+
+MP0  = 24nm         # [CM]:13 ; [JF]:28
+MP1  = 30nm         # [CM]:14 ; [PRE]:9 ; [JF]:48
+MP2  = 24nm         # [CM]:15 ; [JF]:68
+M1OF = 0nm          # [PRE]:10 M1OF = 0 ; [JF]:47 ; [GDS]:59 M1 centre x = 60 nm = 2*MP1
+
+layer M0     { role = conductor; direction = horizontal; width = 14nm; pitch = MP0; offset = MP0/2
+               gds = [15, 0]; gds_pin = [15, 0]; gds_label = [15, 251]
+               note = "width [CM]:30, [TL]:115 width = m2w for M0; offset INFERRED from [GDS]:55-56 (signal centres y = 60, 108 = 12 + 24k). CONFLICT: [JF]:27 offset 0.0; label [LVS]:80-81" }
+layer V0     { role = cut; gds = [18, 0]; note = "[LVS]:46; [GG]:1638" }
+layer M1     { role = conductor; direction = vertical; width = 15nm; pitch = MP1; offset = M1OF
+               gds = [19, 0]; gds_pin = [19, 0]; gds_label = [19, 251]
+               note = "width [CM]:31 M1WIDTH 0.015 and [GDS]:59 (15 nm); [TL]:118 width = pitch/2 = 15. CONFLICT: [JF]:49 width 14.0. label [LVS]:84-85, [GDS]:60" }
+layer V1     { role = cut; gds = [21, 0]; note = "[LVS]:48; [GG]:1638. [TL]:47 layer_num V1 21 agrees. CONFLICT above M2: [TL]:50 M3 23 vs [LVS]:50 M3 30" }
+layer M2     { role = conductor; direction = horizontal; width = 14nm; pitch = MP2; offset = 0nm
+               gds = [20, 0]; gds_pin = [20, 0]; gds_label = [20, 251]
+               note = "width [CM]:32; offset from [JF]:67 (no M2 shape in [GDS]; [TL] writes OFFSET 0.0); label [LVS]:89-90 (M2_PIN layer_def 88, map 89)" }
+
+connector VIA0   { lower = M0; cut = V0; upper = M1; size = 14nm
+                   enclose_lower = [7nm, 0nm]; enclose_upper = [0.5nm, 7nm]
+                   note = "size [GG]:228 min(M0W, M1W), [GDS]:45. Enclosure: [TL]:225-251 VIARULE V0_RULE enc 0.007, side (15-14)/2 = 0.5. LEF ENCLOSURE pairs are orientation-free; the std/0 pair is [x, y], so the 7 nm end enclosure goes along each wire (x on horizontal M0, y on vertical M1) and the 0.5 nm side enclosure across it. CONFLICT: [JF]:36-37 says 0.0; [CM]:19 ENC = 5; [TL]:135 LAYER V0 WIDTH = min(m2w, M0P/2) = 12 nm vs [TL]:202 VIARULE 14 nm" }
+connector VIA1   { lower = M1; cut = V1; upper = M2; size = 14nm
+                   enclose_lower = [0.5nm, 7nm]; enclose_upper = [7nm, 0nm]
+                   note = "size [GG]:231 min(M1W, M2W); [TL]:207,237 V1_RULE: M2 pitch < M1 pitch so the side enclosure goes on the lower layer. CONFLICT: [JF]:56-57 0.0" }
+
+# ---- rules (Level 2) ------------------------------------------------------------------
+# Sign-off-style values written by genTechLef.tcl for BEOL1_24_30_24_... ([CM]:40) with M2WIDTH 0.014.
+rule M0_W   { kind = width;   on = M0; value = 14nm; note = "[TL]:114-116 i==0: width = m2w" }
+rule M0_S   { kind = spacing; on = M0; value = MP0 - 14nm; note = "[TL]:116 spc = pitch - m2w = 10 nm" }
+rule M0_EOL { kind = eol_spacing; on = M0; width_below = MP0; within = 1nm; value = MP0
+              note = "[TL]:129,172 SPACING tspc(=pitch) ENDOFLINE tspc WITHIN 0.001" }
+rule M1_W   { kind = width;   on = M1; value = MP1/2; note = "[TL]:118-119 width = spacing = pitch/2" }
+rule M1_S   { kind = spacing; on = M1; value = MP1/2 }
+rule M1_EOL { kind = eol_spacing; on = M1; width_below = MP1; within = 1nm; value = MP1 }
+rule M2_W   { kind = width;   on = M2; value = 14nm }
+rule M2_S   { kind = spacing; on = M2; value = MP2 - 14nm }
+rule M2_EOL { kind = eol_spacing; on = M2; width_below = MP2; within = 1nm; value = MP2 }
+rule V0_SP  { kind = cut_spacing; on = V0; value = 42nm; measure = center
+              note = "[TL]:144,160 SPACING sqrt(2)*M1 pitch CENTERTOCENTER, printed %.3f -> 0.042 um. The exact value 30*sqrt(2) is not rational; the printed value is used" }
+rule V1_SP  { kind = cut_spacing; on = V1; value = 34nm; measure = center; note = "[TL]:144,160 sqrt(2)*24 = 33.94 printed %.3f -> 0.034 um, CENTERTOCENTER" }
+rule M0_A   { kind = area; on = M0; value = MP0 * MP0 / 2; note = "[TL]:128,171 AREA pitch*pitch/2 = 288 nm^2" }
+rule M1_A   { kind = area; on = M1; value = MP1 * MP1 / 2; note = "[TL]:128,171 AREA pitch*pitch/2 = 450 nm^2" }
+# GAP: MPO = 2 minimum pin opening ([CM]:16, [DOC]:52) has no std/0 rule kind.

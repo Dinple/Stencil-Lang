@@ -1,0 +1,112 @@
+stencil 0.1
+# ASAP7 upper metals: V3 .. M9 and the pad layer, their vias and their rules (TLEF).
+# Source keys (TLEF, CLEF, DRC, GST, ...) are listed in asap7.stencil.
+
+module { version = "0.2.0" }
+technology { grid = 0.25nm }
+
+BELOW = required(layer)      # the metal VIA34 starts from (ASAP7: M3)
+
+layer V3 { role = cut; gds = [35, 0] }                                 # DRC:66; TLEF:222-256
+layer M4 { role = conductor; direction = horizontal; gds = [40, 0]     # DRC:67; TLEF:260
+  width = one_of(24nm, 120nm, 216nm, 312nm, 408nm)                     # TLEF:272-273
+  pitch = 48nm; offset = 3nm                                           # TLEF:261, TLEF:265 (TLEF4:293 0.012/4)
+  masks = 2                                                            # inferred: DRC:846-866 splits 1x M4 tracks into GA/GB colour grids
+  shapes = rect                                                        # TLEF:296-298
+  note = "DRC:2597-2601 puts M4 horizontal edges on a 24nm grid. DRC:2602-2608 puts min-width tracks at 2N*24nm + offset. DRC:841 sets VAR_M4_YOFFSET 0, which disagrees with the TLEF 3nm offset."
+}
+layer V4 { role = cut; gds = [45, 0] }                                 # DRC:68; TLEF:302-339
+layer M5 { role = conductor; direction = vertical; gds = [50, 0]       # DRC:69; TLEF:343
+  width = one_of(24nm, 120nm, 216nm, 312nm, 408nm, 504nm, 600nm, 696nm, 792nm, 888nm, 984nm)  # TLEF:359-360
+  pitch = 48nm; offset = 0nm                                           # TLEF:344, TLEF:347
+  masks = 2                                                            # inferred: DRC:896-921 GA/GB decomposition
+  shapes = rect                                                        # TLEF:381-383
+}
+layer V5 { role = cut; gds = [55, 0] }                                 # DRC:70; TLEF:387-427
+layer M6 { role = conductor; direction = horizontal; gds = [60, 0]     # DRC:71; TLEF:431
+  width = one_of(32nm, 160nm, 288nm, 416nm, 544nm)                     # TLEF:441-442
+  pitch = 64nm                                                         # TLEF:432; no OFFSET in TLEF:429-466 (gap)
+  masks = 2                                                            # inferred: DRC:951-960 decomposition variables
+  shapes = rect                                                        # TLEF:462-464
+}
+layer V6 { role = cut; gds = [65, 0] }                                 # DRC:72; TLEF:468-500
+layer M7 { role = conductor; direction = vertical; gds = [70, 0]       # DRC:73; TLEF:504
+  width = one_of(32nm, 160nm, 288nm, 416nm, 544nm)                     # TLEF:514-515
+  pitch = 64nm                                                         # TLEF:505; no OFFSET (gap)
+  masks = 2                                                            # inferred: DRC:1007-1029 GA/GB decomposition
+  shapes = rect                                                        # TLEF:538-540
+}
+layer V7 { role = cut; gds = [75, 0] }                                 # DRC:74; TLEF:544-548
+layer M8 { role = conductor; direction = horizontal; gds = [80, 0]     # DRC:75; TLEF:552
+  width = 40nm .. 2000nm                                               # TLEF:554 WIDTH 0.04, TLEF:568 MAXWIDTH 2.0
+  pitch = 80nm                                                         # TLEF:553; no OFFSET (gap)
+}
+layer V8 { role = cut; gds = [85, 0] }                                 # DRC:76; TLEF:572-576
+layer M9 { role = conductor; direction = vertical; gds = [90, 0]       # DRC:77; TLEF:581
+  width = 40nm                                                         # TLEF:583 (a minimum; TLEF gives no MAXWIDTH for M9, not expressible in std/0 yet)
+  pitch = 80nm                                                         # TLEF:582
+}
+layer V9  { role = cut; gds = [95, 0] }                                # DRC:78; TLEF:599-603
+layer Pad { role = conductor; direction = horizontal; gds = [96, 0]    # DRC:79; TLEF:605-621
+  width = 40nm; pitch = 80nm                                           # TLEF:609, TLEF:608
+}
+
+connector VIA34 { lower = BELOW; cut = V3; upper = M4; size = [18nm, 24nm]  # TLEF:679-686 (V3 +-9,+-12); TLEF:230 CUTCLASS V3 18x24
+  enclose_lower = [0nm, 5nm]; enclose_upper = [11nm, 0nm] }            # TLEF:681, TLEF:683
+connector VIA45 { lower = M4; cut = V4; upper = M5; size = 24nm        # TLEF:670-677
+  enclose_lower = [11nm, 0nm]; enclose_upper = [0nm, 11nm] }           # TLEF:672, TLEF:674
+connector VIA56 { lower = M5; cut = V5; upper = M6; size = [24nm, 32nm]  # TLEF:661-668; TLEF:391
+  enclose_lower = [0nm, 11nm]; enclose_upper = [11nm, 0nm] }           # TLEF:663, TLEF:665
+connector VIA67 { lower = M6; cut = V6; upper = M7; size = 32nm        # TLEF:652-659
+  enclose_lower = [11nm, 0nm]; enclose_upper = [0nm, 11nm] }           # TLEF:654, TLEF:656
+connector VIA78 { lower = M7; cut = V7; upper = M8; size = 32nm        # TLEF:643-650
+  enclose_lower = [0nm, 11nm]; enclose_upper = [11nm, 4nm] }           # TLEF:645, TLEF:647
+connector VIA89 { lower = M8; cut = V8; upper = M9; size = 40nm }      # TLEF:634-641 (enclosure 0)
+connector VIA9PAD { lower = M9; cut = V9; upper = Pad; size = 100nm    # TLEF:625-632
+  note = "Conflicts with V9 WIDTH 0.04 (TLEF:602) and with VIARULE Pad_M9 cut +-0.016 (TLEF:716)" }
+
+# -- V3 .. Pad: from TLEF only (the DRC rules above M3 are grid/decomposition checks, mostly not expressible)
+rule V3_S   { kind = cut_spacing; on = V3; value = 34nm }                                                     # TLEF:237 SPACINGTABLE DEFAULT 0.034
+rule V3_M4_EN { kind = enclosure; on = [V3, M4]; value = 11nm; note = "on two opposite sides" }               # DRC:2498-2503
+rule M4_S   { kind = spacing; on = M4                                                                         # TLEF:287-290 SPACINGTABLE
+  table { width = [0nm, 25nm]; prl = [0nm]; values = [[24nm], [72nm]] } }
+rule M4_EOL { kind = eol_spacing; on = M4; width_below = 25nm; within = 40nm; value = 24nm                    # TLEF:269-270
+  note = "LEF58: SPACING 0.024 ENDOFLINE 0.025 WITHIN 0.04 ENDTOEND 0.04 (ENDTOEND has no std/0 slot)" }
+rule M4_A   { kind = area; on = M4; value = 2000nm * 1nm; note = "(TLEF 0.002um^2)" }                            # TLEF:267
+rule V4_S   { kind = cut_spacing; on = V4; value = 34nm }                                                     # TLEF:320
+rule M5_S   { kind = spacing; on = M5
+  table { width = [0nm, 25nm]; prl = [0nm]; values = [[24nm], [72nm]] } }                                     # TLEF:372-375
+rule M5_EOL { kind = eol_spacing; on = M5; width_below = 25nm; within = 40nm; value = 24nm }                  # TLEF:351-352
+rule M5_A   { kind = area; on = M5; value = 2000nm * 1nm }                                             # TLEF:349
+rule V5_S   { kind = cut_spacing; on = V5; value = 34nm }                                                     # TLEF:400
+rule M6_S   { kind = spacing; on = M6
+  table { width = [0nm, 33nm]; prl = [0nm]; values = [[32nm], [72nm]] } }                                     # TLEF:453-456
+rule M6_EOL { kind = eol_spacing; on = M6; width_below = 37.5nm; within = 40nm; value = 32nm }                # TLEF:438-439
+rule M6_A   { kind = area; on = M6; value = 2187.5nm * 1nm; note = "(TLEF 0.0021875um^2)" }                      # TLEF:436
+rule V6_S   { kind = cut_spacing; on = V6; value = 34nm }                                                     # TLEF:481
+rule M7_S   { kind = spacing; on = M7
+  table { width = [0nm, 33nm]; prl = [0nm]; values = [[32nm], [72nm]] } }                                     # TLEF:529-532
+rule M7_EOL { kind = eol_spacing; on = M7; width_below = 37.5nm; within = 40nm; value = 30nm                  # TLEF:511-512
+  note = "30nm here vs 32nm for M6 (TLEF:439) and SPACING 0.032 (TLEF:507): kept as written" }
+rule M7_A   { kind = area; on = M7; value = 2187.5nm * 1nm }                                           # TLEF:509
+rule V7_S   { kind = cut_spacing; on = V7; value = 46nm }                                                     # TLEF:546
+rule M8_S   { kind = spacing; on = M8                                                                         # TLEF:557-564
+  table {
+    width  = [0nm, 59.75nm, 79.75nm, 119.75nm, 499.75nm, 999.75nm]
+    prl    = [0nm, 399.75nm, 1199.75nm, 1799.75nm]
+    values = [[40nm, 40nm, 40nm, 40nm], [40nm, 40nm, 40nm, 40nm], [40nm, 40nm, 40nm, 40nm],
+              [40nm, 40nm, 40nm, 40nm], [40nm, 40nm, 40nm, 500nm], [40nm, 40nm, 40nm, 1000nm]]
+  } }
+rule M8_A   { kind = area; on = M8; value = 7520nm * 1nm }                                             # TLEF:555
+rule V8_S   { kind = cut_spacing; on = V8; value = 57nm }                                                     # TLEF:574
+rule M9_S   { kind = spacing; on = M9                                                                         # TLEF:586-593
+  table {
+    width  = [0nm, 59.75nm, 79.75nm, 119.75nm, 499.75nm, 999.75nm]
+    prl    = [0nm, 399.75nm, 1199.75nm, 1799.75nm]
+    values = [[40nm, 40nm, 40nm, 40nm], [40nm, 40nm, 40nm, 40nm], [40nm, 40nm, 40nm, 40nm],
+              [40nm, 40nm, 40nm, 40nm], [40nm, 40nm, 40nm, 500nm], [40nm, 40nm, 40nm, 1000nm]]
+  } }
+rule M9_A   { kind = area; on = M9; value = 7520nm * 1nm }                                             # TLEF:584
+rule V9_S   { kind = cut_spacing; on = V9; value = 57nm }                                                     # TLEF:601
+rule PAD_S  { kind = spacing; on = Pad                                                                        # TLEF:610-613
+  table { width = [0nm, 11999.75nm]; prl = [0nm, 11999.75nm]; values = [[2000nm, 2000nm], [2000nm, 3000nm]] } }

@@ -29,16 +29,18 @@ cli.mjs       command line: resolve [--with-diagnostics] | check [--profile FILE
 python/       the query API in Python, with native ports of the checker, templates and profiles
 playground/   live editor with a side-by-side drawing of the stack, top view and devices
 doc/          SPEC.md (the core language), VOCABULARY.md (the std/0 vocabulary), API.md (the query API)
-examples/     tutorial levels, a multi-module example, and three PDK descriptions
+docs/         the documentation site (Sphinx), published with the playground
+examples/     tutorial levels, a multi-module example, three PDKs as modules, two transplants
 tests/        node --test tests/*.test.mjs tests/conformance/*.test.mjs
 vscode/       the VS Code extension (uses core/ and the playground's renderer)
-site/         landing page of the online playground (GitHub Pages)
 ```
 
 ## Try it
 
-- Online playground: <https://dinple.github.io/Stencil-Lang/>. Edit on the
-  left and see the stack, top view and devices on the right; nothing to install.
+- Documentation: <https://dinple.github.io/Stencil-Lang/>, with a tutorial,
+  the PDK modules, the transplant examples and the language reference.
+- Online playground: <https://dinple.github.io/Stencil-Lang/playground/>. Edit
+  on the left and see the stack, top view and devices on the right.
 - VS Code: the extension in [`vscode/`](vscode/) adds diagnostics with
   quick fixes, completion, hover docs, an outline, go to definition, and the
   same live preview beside the editor (`Ctrl+K V`). Build it with
@@ -48,7 +50,7 @@ site/         landing page of the online playground (GitHub Pages)
 
 ## Quick start
 
-Requires Node.js 18 or newer (no packages to install).
+Requires Node.js 18 or newer.
 
 ```bash
 node cli.mjs check examples/pdk/gt2n/bspdn.stencil --root examples
@@ -63,9 +65,9 @@ fixes for many diagnostics. `?selftest` runs its browser self-test.
 
 ## Query API for cell generators
 
-A cell generator should not parse the resolved JSON or re-implement rule
-semantics. The query API answers its questions directly, with exact numbers
-(rationals, in nm), in Python and in JavaScript:
+The query API answers a cell generator's questions about a technology
+(tracks, vias, rule values, devices) with exact numbers (rationals, in nm),
+in Python and in JavaScript:
 
 ```python
 from stencil import Technology                     # python/: pure Python, no dependencies
@@ -80,7 +82,7 @@ t.device("GAA").w_eff(w=31)                        # 216
 t.check([("M1", (0, 0, 14, 100)), ("M1", (20, 0, 34, 100))])   # the reference rule checker
 ```
 
-A rule query never guesses: when a rule depends on something the query did
+When a rule depends on something the query did
 not say (an axis, a width, a net relation, a layer derived from the queried
 one), it raises `UnresolvedRuleError` naming the rule and what it needs. The
 same queries exist in JavaScript (`core/query.js`, camelCase), and one set of
@@ -93,8 +95,10 @@ cases (`tests/query_cases.json`) runs against both. See `doc/API.md`.
 | `examples/level0_routing.stencil` ... `level2_rules.stencil` | the vocabulary level by level |
 | `examples/compose/gear_ratio.stencil` | one front-side module imported at two gear ratios |
 | `examples/pdk/gt2n/` | GT2N split into backside, buried-rail, device and front-side modules; `bspdn.stencil` composes them as shipped, `fspdn.stencil` without the backside network |
-| `examples/pdk/asap7/asap7.stencil` | ASAP7 (7.5-track FinFET), every value citing its PDK file and line |
-| `examples/pdk/probe3/probe3_finfet.stencil` | PROBE3.0 FinFET (2 fins, 4 tracks) |
+| `examples/pdk/asap7/` | ASAP7 (7.5-track FinFET) as device, front-side (M1 .. M3) and upper-metal modules, every value citing its PDK file and line |
+| `examples/pdk/probe3/` | PROBE3.0 FinFET (2 fins, 4 tracks) as device and front-side modules; the row height follows the track count |
+| `examples/transplant/probe3_asap7_grid.stencil` | PROBE3 devices under the ASAP7 metals, with checks on the row height and the M1 grid |
+| `examples/transplant/gt2n_device_probe3_grid.stencil` | GT2N nanosheet devices under the PROBE3 metals, with the rails moved to M0 |
 
 
 ## Status

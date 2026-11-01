@@ -304,7 +304,7 @@ overlap is decided exactly.
 
 - Rows. `row R { site = S; y = Y; flip = F }` places S's bands, rails,
   tracks and edge features in this site: a local height v becomes `Y + v`,
-  or `Y + h − v` when flipped (mirrored about the row's own centreline; h =
+  or `Y + h - v` when flipped (mirrored about the row's own centreline; h =
   S's height). Rows nest one level (S must not have rows), S must have this
   site's width, and the row must lie within the height (V040). Expanded
   children are named `R.child`. Rows of different strata may overlap.
@@ -353,7 +353,7 @@ overlap is decided exactly.
 | `axis` | `x` \| `y` |, | Condition: the rule applies along this axis only |
 | child `case <context> { value }` | | | Context-dependent values |
 | child `table { <index> = [...]; values = [[...]] }` | | | Indexed values (e.g. width x parallel run length) |
-| `intent` | `pdk` \| `generator` \| `checker_only` | `pdk` | `pdk`: a rule a generator honours; `generator`: a stricter generator policy, which may only tighten, never relax, a `pdk` rule; `checker_only`: kept for sign-off checkers, out of scope for generators (decided 2026-10-29) |
+| `intent` | `pdk` \| `generator` \| `checker_only` | `pdk` | `pdk`: a rule a generator honours; `generator`: a stricter generator policy, which may only tighten, never relax, a `pdk` rule; `checker_only`: kept for sign-off checkers, out of scope for generators |
 | conditions | per kind (section 3) |, | e.g. `same_color`, `width_below`, `prl`, `within` |
 
 ### 2.10 `region`
@@ -364,7 +364,7 @@ overlap is decided exactly.
 
 ### 2.11 `check`
 
-An assertion evaluated after composition (decided 2026-10-29). Modules
+An assertion evaluated after composition. Modules
 carry their own checks, so an importer cannot forget them.
 
 | Attribute | Type | Default | Doc |
@@ -441,8 +441,8 @@ reference, and engine encodings (CP-SAT, ...) are implementations of them.
   off-grid; geometry may not. Comparisons are exact; Euclidean distances are compared as squares.
   There is no epsilon and no snapping.
 - For two rectangles A, B:
-  `gx = max(0, A.x0 − B.x1, B.x0 − A.x1)`, `gy` likewise (gaps);
-  `ox = min(A.x1,B.x1) − max(A.x0,B.x0)`, `oy` likewise (overlaps; negative
+  `gx = max(0, A.x0 - B.x1, B.x0 - A.x1)`, `gy` likewise (gaps);
+  `ox = min(A.x1,B.x1) - max(A.x0,B.x0)`, `oy` likewise (overlaps; negative
   when apart). Overlap means `ox > 0 and oy > 0`; contact (closed
   interaction) means `ox >= 0 and oy >= 0`.
 
@@ -493,8 +493,8 @@ Containment kinds take no limit.
 | `cut_spacing` | one drawn cut layer (not a region or computed layer), or a connector | as `spacing`; `measure = center`: distance between centres (Euclidean, or the absolute centre difference along `axis`) | as `spacing` |
 | `corner_spacing` | one, or `[A, B]` | only pairs with no projection overlap in either axis (`gx > 0 and gy > 0`; all other pairs, overlapping ones included, are not subject): the smallest distance between a corner of one and a corner of the other | >= value |
 | `eol_spacing` | one | for each end of a subject rectangle along its long axis (`axis`, else the longer extent; a square needs `axis`): every other component that reaches beyond the end (into the open half-plane past it) and whose transverse gap to the end is `<= within` (default 0); measured: the longitudinal gap | >= value; overlap fails |
-| `enclosure` | `[inner, outer]` | for each inner rectangle, the outer components that contain it; margins `[left, right, bottom, top] = [I.x0−O.x0, O.x1−I.x1, I.y0−O.y0, O.y1−I.y1]` | some containing outer component has all four margins (`axis = x`: left and right; `y`: bottom and top) satisfying the limit; with `alternative` children, some alternative's four margins all hold (OR over alternatives). Not contained at all: fails |
-| `extension` | `[extending, base]` | `axis` is required; for each overlapping pair: `B.x0 − E.x0` and `E.x1 − B.x1` (for `x`) | both ends >= value; pairs that do not overlap carry no obligation |
+| `enclosure` | `[inner, outer]` | for each inner rectangle, the outer components that contain it; margins `[left, right, bottom, top] = [I.x0-O.x0, O.x1-I.x1, I.y0-O.y0, O.y1-I.y1]` | some containing outer component has all four margins (`axis = x`: left and right; `y`: bottom and top) satisfying the limit; with `alternative` children, some alternative's four margins all hold (OR over alternatives). Not contained at all: fails |
+| `extension` | `[extending, base]` | `axis` is required; for each overlapping pair: `B.x0 - E.x0` and `E.x1 - B.x1` (for `x`) | both ends >= value; pairs that do not overlap carry no obligation |
 | `inside` | `[subject, container]` |, | every subject component is covered by the union of the container (shared boundary allowed) |
 | `interacting` | `[subject, target]` |, | every subject component contacts the target (edge or point contact counts) |
 | `not_interacting` | `[subject, target]` |, | no subject component contacts the target (contact fails) |

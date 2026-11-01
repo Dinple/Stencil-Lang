@@ -18,6 +18,8 @@ const EXAMPLES = [
   { main: 'pdk/gt2n/fspdn.stencil', label: 'GT2N: front-side power (same modules)' },
   { main: 'pdk/asap7/asap7.stencil', label: 'ASAP7: 7.5-track FinFET' },
   { main: 'pdk/probe3/probe3_finfet.stencil', label: 'PROBE3: FinFET' },
+  { main: 'transplant/probe3_asap7_grid.stencil', label: 'Transplant: PROBE3 devices on the ASAP7 routing grid' },
+  { main: 'transplant/gt2n_device_probe3_grid.stencil', label: 'Transplant: GT2N devices on the PROBE3 routing grid' },
 ];
 const KEYS = { project: 'stencil.playground.project', hidden: 'stencil.playground.hidden', theme: 'stencil.playground.theme' };
 const $ = (id) => document.getElementById(id);
@@ -421,13 +423,16 @@ function toast(msg) {
 }
 
 // ?tab=device|json opens that tab; ?theme=dark|light forces the theme;
-// ?example=N loads an example (handy for links and screenshots)
+// ?example=PATH (a menu entry's main file, e.g. transplant/probe3_asap7_grid.stencil)
+// or ?example=N (its position in the menu) loads an example, for links in the docs
 const params = new URLSearchParams(location.search);
 document.querySelector(`[data-tab="${params.get('tab')}"]`)?.click();
 if (params.get('theme') === 'dark' || params.get('theme') === 'light') setTheme(params.get('theme'));
-if (params.has('example') && EXAMPLES[+params.get('example')]) {
-  const ex = EXAMPLES[+params.get('example')];
+const linked = params.get('example');
+const ex = linked === null ? undefined : EXAMPLES.find((e) => e.main === linked) ?? (/^\d+$/.test(linked) ? EXAMPLES[+linked] : undefined);
+if (ex) {
   openProject({ main: ex.main, files: Object.fromEntries(await loadExample(ex.main)) });
+  select.value = String(EXAMPLES.indexOf(ex));
 }
 
 update();

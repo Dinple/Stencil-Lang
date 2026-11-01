@@ -1,4 +1,4 @@
-// Regressions for the M1 review, round 4 .
+// Resolver regression tests, set 4.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { resolveProject } from '../core/resolve.js';

@@ -1,7 +1,7 @@
 stencil 0.1
-# Level 1: the same template as a FinFET.
-# Compared with the nanosheet file, only the channel changes:
-# fins are arrayed along y (not stacked along z) and the gate covers 3 faces.
+# Level 1: a FinFET technology (54 nm gate pitch, 7 tracks of 36 nm).
+# The channel is an array of fins along y, the gate covers 3 faces, and the
+# netlist sets the fin count. The routing is a single M0 layer.
 
 technology { grid = 1nm }
 

@@ -1,7 +1,8 @@
-# Test, then publish the playground (with the language, examples and docs) to GitHub Pages.
-# One-time setup: Settings > Pages > Build and deployment > Source: GitHub Actions, and allow
-# the yw-dev branch in Settings > Environments > github-pages > Deployment branches.
-name: Playground
+# Test, then publish the documentation (site root) and the playground (/playground/) to
+# GitHub Pages. One-time setup: Settings > Pages > Build and deployment > Source: GitHub
+# Actions, and allow the yw-dev branch in Settings > Environments > github-pages >
+# Deployment branches.
+name: Pages
 
 on:
   push:
@@ -35,11 +36,16 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - name: Assemble the site
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build the documentation
         run: |
-          mkdir _site
+          pip install -r docs/requirements.txt
+          sphinx-build -W --keep-going -b html docs _site
+      - name: Add the playground
+        run: |
           cp -r core playground examples doc _site/
-          cp site/index.html _site/index.html
           touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
