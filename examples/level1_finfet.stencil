@@ -1,0 +1,39 @@
+stencil 0.1
+# Level 1: the same template as a FinFET.
+# Compared with the nanosheet file, only the channel changes:
+# fins are arrayed along y (not stacked along z) and the gate covers 3 faces.
+
+technology { grid = 1nm }
+
+CPP   = 54nm
+MP0   = 36nm
+H_row = 7 * MP0
+
+layer FIN  { role = channel; gds = [2, 0] }
+layer GATE { role = conductor; direction = vertical; gds = [7, 0] }
+layer V0   { role = cut; gds = [18, 0] }
+layer M0   { role = conductor; direction = horizontal; width = 18nm; pitch = MP0; offset = MP0/2; gds = [15, 0] }
+
+figure FIN_F   { layer = FIN; width = 7nm; thickness = 46nm }
+figure GATE_LN { layer = GATE; width = 20nm }
+
+array FINS  { of = FIN_F;   axis = y; pitch = 27nm; offset = 20nm; count = 1..3 }
+array GATES { of = GATE_LN; axis = x; pitch = CPP;  count = fill }
+
+cross FET {
+  gate = GATE; channel = FINS; faces = [top, left, right]
+  size nfin { sets = FINS.count }    # netlist nfin -> fin count
+}
+
+stratum DEV { layers = [FIN] }
+
+connector VG { lower = GATE; cut = V0; upper = M0; size = 18nm }
+
+site CORE {
+  width  = CPP
+  height = H_row
+  rail VDD { layer = M0; edge = top }
+  rail VSS { layer = M0; edge = bottom }
+  band p { stratum = DEV; y = H_row/2 .. H_row }
+  band n { stratum = DEV; y = 0nm .. H_row/2 }
+}

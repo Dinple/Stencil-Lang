@@ -1,0 +1,18 @@
+stencil 0.1
+# profile scope through intermediate computed
+# layers (a region of a routed computed layer; a connector endpoint computed
+# from it).
+technology { grid = 1nm }
+
+layer G   { role = conductor }
+stratum ST { layers = [G] }
+layer A   { role = conductor; from = grow(G, 0nm) }
+region R  { from = grow(A, 0nm) }
+rule W    { kind = width; on = R; value = 10nm }
+layer GA2 { role = marker; from = grow(A, 1nm) }
+layer V   { role = cut }
+layer B   { role = conductor }
+connector C { lower = GA2; cut = V; upper = B }
+rule E    { kind = enclosure; on = C; value = 3nm }
+site S { width = 100nm; height = 100nm; pins = [A] }
+profile P { rule_kinds = []; rule_features = [] }

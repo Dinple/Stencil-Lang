@@ -1,0 +1,101 @@
+stencil 0.1
+# GT2N device tier: nanosheet GAAFET, gate grid, source/drain contacts, the
+# contacts up to the first front-side metal, markers, and the cell template.
+# Source: the GT2N PDK; every value cites its file and line.
+# Citations are relative to PDK/GT2N: tech.lef = techlib/gt2_tech.lef,
+# lmap = techlib/gt2_techfile.layermap, cell.lef = lef/tt/gt2_6t_w31_lvt.lef,
+# gt2.X.drc = icv_runset/Include/gt2.X.drc.rs, lvs.rs = icv_runset/gt2_main.lvs.rs,
+# sp = device/tt/gt2_w31_lvt_tt.sp, ev = text dumps of the shipped GDS / LEF.
+
+module { version = "0.2.0" }
+technology { grid = 0.5nm }          # tech.lef:39 MANUFACTURINGGRID 0.0005
+
+CPP     = 42nm                       # cell.lef:37 SITE SIZE 0.042
+H_ROW   = 144nm                      # cell.lef:37 BY 0.144
+L_GATE  = 14nm                       # gt2.gate.drc:31 GATE.1 ; sp:32
+T_SHEET = 5nm                        # sp:72 tfin
+LANDING = required                   # the front-side layer that VG / VSD land on (GT2N: M0)
+
+layer ACT   { role = channel; gds = [2, 0] }                                         # lmap:35
+layer GATE  { role = conductor; direction = vertical; width = L_GATE; tracks = GATES; gds = [3, 0] }   # lmap:38 ; gt2.gate.drc:31-32
+layer SDCON { role = conductor; width = 16nm; gds = [10, 0]; gds_label = [10, 20] }   # gt2.sdcon.drc:32-33 ; lmap:59-60
+layer VSD   { role = cut; gds = [11, 0] }                                            # lmap:62
+layer VG    { role = cut; gds = [12, 0] }                                            # lmap:65
+
+layer NWELL  { role = marker; gds = [1, 0]; from = band(p) }                         # lmap:32 ; ev/gds_inv_x1_w31_lvt.txt:2
+layer NSEL   { role = marker; gds = [6, 0]; from = band(n) }                         # lmap:47
+layer PSEL   { role = marker; gds = [7, 0]; from = band(p) }                         # lmap:50
+layer DUMMY  { role = marker; gds = [4, 0] }                                         # lmap:41
+layer GCUT   { role = marker; gds = [5, 0] }                                         # lmap:44
+layer ELVT   { role = marker; gds = [94, 0] }                                        # lmap:155
+layer ULVT   { role = marker; gds = [95, 0] }                                        # lmap:158
+layer SVT    { role = marker; gds = [96, 0] }                                        # lmap:161
+layer HVT    { role = marker; gds = [97, 0] }                                        # lmap:164
+layer SRAMVT { role = marker; gds = [98, 0] }                                        # lmap:167
+layer prBoundary { role = marker; gds = [235, 250] }                                 # lmap:171
+
+figure SHEET   { layer = ACT; width = one_of(13nm, 31nm); thickness = T_SHEET        # sp:73 hfin ; w13/w31 libraries
+  note = "3 stacked sheets (sp:77 NFIN=3); the PDK gives no vertical sheet pitch" }
+figure GATE_LN { layer = GATE; width = L_GATE }
+array  SHEETS  { of = SHEET; axis = z; count = 3 }                                   # pitch unknown (VOCABULARY 2.4)
+array  GATES   { of = GATE_LN; axis = x; pitch = CPP; offset = 0nm; count = fill }   # ev/gds_inv_x1_w31_lvt.txt:5-7
+
+cross GAA {
+  gate = GATE; channel = SHEETS; faces = all                                         # sp:61 GEOMOD=2
+  size w { sets = SHEET.width }
+  model nmos_elvt { polarity = n; marker = ELVT }                                    # lvs.rs:356
+  model nmos_svt  { polarity = n; marker = SVT }                                     # lvs.rs:358
+  model pmos_elvt { polarity = p; marker = ELVT }                                    # lvs.rs:362
+  model pmos_svt  { polarity = p; marker = SVT }                                     # lvs.rs:364
+}
+stratum DEV { layers = [ACT, SDCON]; polarity = [n, p] }
+
+connector SD_CT { lower = ACT; cut = none; upper = SDCON }                           # lvs.rs:227-228
+connector CVSD  { lower = SDCON; cut = VSD; upper = LANDING; size = [13nm, 12nm]     # gt2.vsd.drc:31-37
+                  enclose_lower = [1nm, 0nm]; enclose_upper = [4nm, 0nm] }           # gt2.vsd.drc:53-58
+connector CVG   { lower = GATE; cut = VG; upper = LANDING; size = [14nm, 12nm]       # gt2.vg.drc:32-38
+                  enclose_upper = [4nm, 0nm] }                                       # gt2.vg.drc:71-72
+
+region POLY  { from = minus(GATE, GCUT, DUMMY) }                                     # lvs.rs:184
+region NGATE { from = minus(intersect(ACT, NSEL, POLY), NWELL) }                     # lvs.rs:181-187
+region PGATE { from = intersect(ACT, NWELL, PSEL, POLY) }                            # lvs.rs:182-193
+
+# The cell template. Rails, pins and in-cell tracks depend on the power and
+# front-side modules, so the composition adds them.
+site gt2_6t {
+  width = CPP; height = H_ROW; symmetry = [y]; boundary = prBoundary                 # cell.lef:35-39
+  band n { stratum = DEV; y = 0nm .. H_ROW/2 }                                       # ev/gds_inv_x1_w31_lvt.txt:12
+  band p { stratum = DEV; y = H_ROW/2 .. H_ROW }                                     # ev/gds_inv_x1_w31_lvt.txt:2,13
+  # Every cell edge carries a dummy gate (diffusion break) shared with the neighbour,
+  # and gate cuts on the row edges that run half a gate past the cell (the GDS of every cell shows them).
+  edge_feature DUMMY_EDGE { layer = DUMMY; at = [left, right]; width = L_GATE }      # ev/gds_inv_x1_w31_lvt.txt:8-9 (4/0)
+  edge_feature GATE_EDGE  { layer = GATE;  at = [left, right]; width = L_GATE }      # ev/gds_inv_x1_w31_lvt.txt:5,7 (3/0)
+  edge_feature GCUT_EDGE  { layer = GCUT;  at = [top, bottom]; width = 10nm; extend = L_GATE/2 }  # ev/gds_inv_x1_w31_lvt.txt:10-11 (5/0)
+}
+
+# ---- device rules ----------------------------------------------------------------
+rule GATE_W   { kind = width;      on = GATE;  value = 14nm; axis = x; limit = exact } # gt2.gate.drc:31-32 (distance == 0.014)
+rule ACT_W    { kind = width;      on = ACT;   value = 8nm;  axis = y }              # gt2.act.drc:31-32
+rule GCUT_W   { kind = width;      on = GCUT;  value = 10nm; axis = y }              # gt2.gcut.drc:31-32
+rule SDCON_W  { kind = width;      on = SDCON; value = 16nm; axis = x; limit = exact } # gt2.sdcon.drc:32-33 (== 0.016)
+rule NSEL_W   { kind = width;      on = NSEL;  value = 72nm; axis = y }              # gt2.npsel.drc:32-33
+rule ACT_L    { kind = min_length; on = ACT;   value = 84nm; axis = x }              # gt2.act.drc:35-36
+rule GCUT_L   { kind = min_length; on = GCUT;  value = 42nm; axis = x }              # gt2.gcut.drc:35-36
+rule GATE_S   { kind = spacing;    on = GATE;  value = 28nm; axis = x }              # gt2.gate.drc:37-40 (exact)
+rule ACT_S    { kind = spacing;    on = ACT;   value = 30nm; axis = y }              # gt2.act.drc:40-41
+rule SDCON_S  { kind = spacing;    on = SDCON; value = 20nm; axis = y; same_net = false }   # gt2.sdcon.drc:38-39
+rule GCUT_ACT_S   { kind = spacing; on = [GCUT, ACT];   value = 10nm; axis = y }     # gt2.gcut.drc:61-62
+rule SDCON_GATE_S { kind = spacing; on = [SDCON, GATE]; value = 6nm;  axis = x }     # gt2.sdcon.drc:50-52
+rule VG_ACT_S     { kind = spacing; on = [VG, ACT];     value = 6nm;  axis = y }     # gt2.vg.drc:77-78
+rule VSD_CS   { kind = cut_spacing; on = VSD; value = 29nm }                         # tech.lef:197
+rule VG_CS    { kind = cut_spacing; on = VG;  value = 28nm }                         # tech.lef:203
+rule VG_LAND_EN   { kind = enclosure; on = [VG, LANDING];   value = 4nm; axis = x }  # gt2.vg.drc:71-72
+rule VSD_SDCON_EN { kind = enclosure; on = [VSD, SDCON];    value = 1nm; axis = x }  # gt2.vsd.drc:53-54
+rule NSEL_ACT_EN  { kind = enclosure; on = [ACT, NSEL];     value = 15nm; axis = y } # gt2.npsel.drc:40-41
+rule PSEL_ACT_EN  { kind = enclosure; on = [ACT, PSEL];     value = 15nm; axis = y } # gt2.npsel.drc:53-54
+rule SDCON_ACT_EXT { kind = extension; on = [SDCON, ACT];   value = 10nm; axis = y } # gt2.sdcon.drc:46-47
+rule VG_IN_GATE    { kind = inside; on = [VG, GATE] }                             # gt2.vg.drc:52-53 VG.5
+rule VG_GATE_EDGES { kind = enclosure; on = [VG, GATE]; axis = x; limit = exact; value = 0nm }  # VG.5: vertical edges coincide with GATE's
+rule VSD_IN_LAND   { kind = inside; on = [VSD, LANDING] }                         # gt2.vsd.drc:49-50 VSD.5
+
+check GATE_GRID { holds = CPP >= L_GATE + GATE_S.value; message = "the gate pitch cannot hold a gate plus the gate spacing" }

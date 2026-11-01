@@ -1,0 +1,27 @@
+stencil 0.1
+# GT2N backside power-delivery network (layers marked LEF58_BACKSIDE).
+# Listed farthest-from-device first, so BV0 sits just under the rail.
+
+module { version = "0.2.0" }
+technology { grid = 0.5nm }
+
+RAIL = required                      # the rail BV0 lands on (GT2N: BPR)
+
+layer BRDL { role = conductor; side = back; direction = vertical;   width = 1600nm; pitch = 3200nm; offset = 1600nm; gds = [1000, 0]; gds_pin = [1000, 251]; gds_label = [1000, 20] }  # tech.lef:58-65
+layer BV4  { role = cut;       side = back; gds = [990, 0] }                                                                        # lmap:196
+layer BM4  { role = conductor; side = back; direction = horizontal; width = 360nm;  pitch = 720nm;  offset = 360nm;  gds = [980, 0]; gds_pin = [980, 251]; gds_label = [980, 20] }   # tech.lef:74-84
+layer BV3  { role = cut;       side = back; gds = [970, 0] }
+layer BM3  { role = conductor; side = back; direction = vertical;   width = 360nm;  pitch = 720nm;  offset = 360nm;  gds = [960, 0]; gds_pin = [960, 251]; gds_label = [960, 20] }   # tech.lef:93-103
+layer BV2  { role = cut;       side = back; gds = [950, 0] }
+layer BM2  { role = conductor; side = back; direction = horizontal; width = 56nm;   pitch = 112nm;  offset = 56nm;   gds = [940, 0]; gds_pin = [940, 251]; gds_label = [940, 20] }   # tech.lef:112-122
+layer BV1  { role = cut;       side = back; gds = [930, 0] }
+layer BM1  { role = conductor; side = back; direction = vertical;   width = 56nm;   pitch = 112nm;  offset = 56nm;   gds = [920, 0]; gds_pin = [920, 251]; gds_label = [920, 20] }   # tech.lef:131-141
+layer BV0  { role = cut;       side = back; gds = [910, 0] }                                                                        # tech.lef:143-148
+
+connector BVIA4 { lower = BRDL; cut = BV4; upper = BM4;  size = [1600nm, 360nm]; enclose_lower = [0nm, 200nm]; enclose_upper = [40nm, 0nm] }  # tech.lef:674-682
+connector BVIA3 { lower = BM4;  cut = BV3; upper = BM3;  size = [360nm, 360nm];  enclose_lower = [20nm, 0nm];  enclose_upper = [0nm, 20nm] }  # tech.lef:684-692
+connector BVIA2 { lower = BM3;  cut = BV2; upper = BM2;  size = [360nm, 56nm];   enclose_lower = [0nm, 12nm];  enclose_upper = [12nm, 0nm] }  # tech.lef:694-702
+connector BVIA1 { lower = BM2;  cut = BV1; upper = BM1;  size = [56nm, 56nm];    enclose_lower = [12nm, 0nm];  enclose_upper = [0nm, 12nm] }  # tech.lef:704-712
+connector BVIA0 { lower = BM1;  cut = BV0; upper = RAIL; size = [40nm, 32nm];    enclose_lower = [0nm, 10nm];  enclose_upper = [10nm, 0nm] }  # tech.lef:714-722
+
+rule BV0_CS { kind = cut_spacing; on = BV0; value = 32nm }                           # tech.lef:145

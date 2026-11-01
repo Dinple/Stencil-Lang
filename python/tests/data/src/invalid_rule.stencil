@@ -1,0 +1,7 @@
+stencil 0.1
+# A technology with an invalid rule (an extension needs an axis), for allow_incomplete.
+technology { grid = 1nm }
+layer A { role = conductor }
+layer B { role = conductor }
+rule X  { kind = extension; on = [A, B]; value = 3nm }
+rule W  { kind = width; on = A; value = 5nm }

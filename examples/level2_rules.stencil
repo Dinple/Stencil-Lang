@@ -1,0 +1,51 @@
+stencil 0.1
+# Level 2: rules and derived masks on a small technology.
+# Marker layers with `from` are computed, not drawn; the view shows the
+# ones that can be computed from the cell template alone.
+
+technology { grid = 1nm }
+
+CPP   = 50nm
+H_row = 240nm
+E_nw  = 12nm
+E_imp = 6nm
+
+layer CH   { role = channel; gds = [2, 0] }
+layer GATE { role = conductor; direction = vertical; gds = [7, 0] }
+layer V0   { role = cut; gds = [18, 0] }
+layer M0   { role = conductor; direction = horizontal; width = 20nm; pitch = 40nm; offset = 20nm; masks = 2; gds = [15, 0] }
+layer NW   { role = marker; gds = [1, 0];  from = grow(band(p), E_nw) }
+layer NIMP { role = marker; gds = [11, 0]; from = grow(band(n), E_imp) }
+
+figure DIFF    { layer = CH; width = 40nm .. 100nm }
+figure GATE_LN { layer = GATE; width = 18nm }
+array  GATES   { of = GATE_LN; axis = x; pitch = CPP; count = fill }
+
+cross FET { gate = GATE; channel = DIFF; faces = [top]; size w { sets = DIFF.width } }
+stratum DEV { layers = [CH] }
+connector VG { lower = GATE; cut = V0; upper = M0; size = 18nm }
+
+region SD { from = minus(CH, GATE) }      # used by rules, never emitted
+
+rule V0_COLOR { kind = cut_spacing; on = V0; same_color = true; value = 40nm }
+
+rule M0_LEN {                              # context-dependent minimum length
+  kind = min_length; on = M0
+  case via_end  { value = 30nm }
+  case open_end { value = 44nm }
+}
+
+rule M0_EOL { kind = eol_spacing; on = M0; width_below = 24nm; value = 28nm }
+
+rule M0_SP_GEN {
+  kind = spacing; on = M0; value = 24nm; intent = generator
+  note = "PDK allows 20nm; the generator keeps 24nm"
+}
+
+site CORE {
+  width = CPP; height = H_row
+  rail VDD { layer = M0; edge = top }
+  rail VSS { layer = M0; edge = bottom }
+  band p { stratum = DEV; y = H_row/2 .. H_row }
+  band n { stratum = DEV; y = 0nm .. H_row/2 }
+}

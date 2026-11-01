@@ -1,0 +1,34 @@
+# Build, test and package the VS Code extension; the .vsix is attached to the run.
+name: VS Code extension
+
+on:
+  push:
+    branches: [main]
+    paths: ['vscode/**', 'core/**', 'playground/render.js', 'playground/style.css', '.github/workflows/extension.yml']
+  pull_request:
+    paths: ['vscode/**', 'core/**', 'playground/render.js', 'playground/style.css']
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: vscode
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+      - name: Integration tests in VS Code
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq xvfb
+          xvfb-run -a node test/integration/run.mjs
+      - run: npx vsce package --no-dependencies
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stencil-vsix
+          path: vscode/*.vsix

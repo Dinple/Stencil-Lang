@@ -1,0 +1,14 @@
+stencil 0.1
+# Rules whose children the resolver marks invalid (for allow_incomplete).
+technology { grid = 1nm }
+layer A { role = conductor }
+layer B { role = conductor }
+rule E {
+  kind = enclosure; on = [A, B]
+  alternative good { margins = [0nm, 0nm, 0nm, 0nm] }
+  alternative bad { }
+}
+rule S {
+  kind = spacing; on = A
+  table { width = [0nm]; values = [[2nm]]; bogus = 9nm }
+}

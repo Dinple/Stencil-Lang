@@ -1,0 +1,17 @@
+stencil 0.1
+# connectors on computed layers in the checker
+# and in tool profiles.
+technology { grid = 1nm }
+
+layer A  { role = conductor }
+layer GA { role = marker; from = grow(A, 1nm) }
+layer V  { role = cut }
+layer U  { role = cut }
+layer VC { role = cut; from = grow(U, 0nm) }
+layer B  { role = conductor }
+connector C  { lower = GA; cut = V; upper = B }
+connector CC { lower = A; cut = VC; upper = B }
+rule E  { kind = enclosure; on = C; value = 3nm }
+rule CS { kind = cut_spacing; on = CC; value = 10nm }
+site S { width = 100nm; height = 100nm; pins = [A] }
+profile P { rule_kinds = [width]; rule_features = [] }

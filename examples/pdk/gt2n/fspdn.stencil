@@ -1,0 +1,22 @@
+stencil 0.1
+# GT2N front-side power variant (techlib/gt2_fspdn_tech.lef): the same modules
+# without the backside network. The buried rail stays, but is no longer routed.
+
+module { version = "0.2.0" }
+technology { grid = 0.5nm; stack = [rail, dev, fs] }
+
+import "./rail"      as rail { H_ROW = dev.H_ROW; SD_LAND = dev.SDCON; CHANNEL = dev.ACT; GCUT = dev.GCUT }
+import "./device"    as dev  { LANDING = fs.M0 }
+import "./frontside" as fs   { CPP = dev.CPP }
+
+&rail.BPR { drop direction; drop pitch; drop offset }                # gt2_fspdn_tech.lef:57-59 MASTERSLICE
+rule VBPR_CS { kind = cut_spacing; on = rail.VBPR; value = 12nm }    # gt2_fspdn_tech.lef:95
+
+&dev.gt2_6t {
+  rail vdd { layer = rail.BPR; edge = top;    width = rail.W_RAIL }
+  rail vss { layer = rail.BPR; edge = bottom; width = rail.W_RAIL }
+  pins = [fs.M1]
+  tracks M0 { use = 1..5 }
+}
+
+check ROW_TRACKS { holds = mod(dev.H_ROW, fs.MP0) == 0nm; message = "the row height is not a whole number of M0 pitches" }

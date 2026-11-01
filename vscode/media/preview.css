@@ -1,0 +1,14 @@
+/* Preview layout inside a VS Code webview (the look comes from the playground's style.css). */
+body {
+  display: block;
+  padding: 10px 12px 12px 10px;
+  height: 100vh;
+}
+#viz-pane {
+  height: 100%;
+  grid-template-rows: minmax(0, 1.25fr) minmax(0, 1fr);
+}
+#status { position: absolute; right: 8px; top: 2px; padding: 0 6px; background: var(--paper); font-size: 10.5px; font-weight: 400; }
+#status.ok { color: var(--ok); }
+#status.has-errors { color: var(--err); font-weight: 600; }
+#status.has-warnings { color: var(--warn); font-weight: 600; }

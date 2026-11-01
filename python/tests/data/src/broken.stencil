@@ -1,0 +1,3 @@
+stencil 0.1
+technology { grid = 1nm }
+layer M1 { role = conductor; direction = sideways }

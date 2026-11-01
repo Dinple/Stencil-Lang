@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stencil-tech"
+version = "0.1.0"
+description = "Query API for Stencil technology descriptions: layers, vias, cell templates, rule values, devices, and a reference rule checker."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "BSD-3-Clause" }
+dependencies = []
+
+[tool.setuptools]
+packages = ["stencil"]
+
+# The JavaScript resolver, copied in by tools/vendor_resolver.py before a build.
+[tool.setuptools.package-data]
+stencil = ["_resolver/cli.mjs", "_resolver/package.json", "_resolver/core/*.js"]

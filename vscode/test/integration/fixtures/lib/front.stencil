@@ -1,0 +1,3 @@
+stencil 0.1
+MP = required(len)
+layer M1 { role = conductor; direction = vertical; pitch = MP }

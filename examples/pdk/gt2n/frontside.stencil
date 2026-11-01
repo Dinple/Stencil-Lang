@@ -1,0 +1,80 @@
+stencil 0.1
+# GT2N front-side interconnect, M0 .. RDL. The importer may change the M0/M1
+# pitches; the module's own checks keep them physically possible.
+
+module { version = "0.2.0" }
+technology { grid = 0.5nm }
+
+MP0 = 24nm                           # tech.lef:211
+MP1 = 28nm                           # tech.lef:230
+CPP = required                       # in-cell M1 sits on a CPP/2 grid
+
+layer M0  { role = conductor; direction = horizontal; width = 12nm; pitch = MP0; offset = 0nm; gds = [20, 0]; gds_pin = [20, 251]; gds_label = [20, 20] }  # tech.lef:207-218 ; lmap:68-70
+layer V0  { role = cut; gds = [22, 0] }                                                                 # lmap:71
+layer M1  { role = conductor; direction = vertical;   width = 14nm; pitch = MP1; offset = 7nm; gds = [25, 0]; gds_pin = [25, 251]; gds_label = [25, 20] }   # tech.lef:226-238
+layer V1  { role = cut; gds = [27, 0] }
+layer M2  { role = conductor; direction = horizontal; width = 12nm;  pitch = 24nm;  gds = [30, 0]; gds_pin = [30, 251]; gds_label = [30, 20] }      # tech.lef:248-260
+layer V2  { role = cut; gds = [32, 0] }
+layer M3  { role = conductor; direction = vertical;   width = 14nm;  pitch = 28nm;  gds = [35, 0]; gds_pin = [35, 251]; gds_label = [35, 20] }      # tech.lef:270-282
+layer V3  { role = cut; gds = [37, 0] }
+layer M4  { role = conductor; direction = horizontal; width = 21nm;  pitch = 42nm;  gds = [40, 0]; gds_pin = [40, 251]; gds_label = [40, 20] }      # tech.lef:292-304
+layer V4  { role = cut; gds = [42, 0] }
+layer M5  { role = conductor; direction = vertical;   width = 21nm;  pitch = 42nm;  gds = [45, 0]; gds_pin = [45, 251]; gds_label = [45, 20] }      # tech.lef:314-326
+layer V5  { role = cut; gds = [47, 0] }
+layer M6  { role = conductor; direction = horizontal; width = 38nm;  pitch = 76nm;  gds = [50, 0]; gds_pin = [50, 251]; gds_label = [50, 20] }      # tech.lef:336-348
+layer V6  { role = cut; gds = [52, 0] }
+layer M7  { role = conductor; direction = vertical;   width = 38nm;  pitch = 76nm;  gds = [55, 0]; gds_pin = [55, 251]; gds_label = [55, 20] }      # tech.lef:358-370
+layer V7  { role = cut; gds = [57, 0] }
+layer M8  { role = conductor; direction = horizontal; width = 38nm;  pitch = 76nm;  gds = [60, 0]; gds_pin = [60, 251]; gds_label = [60, 20] }      # tech.lef:380-392
+layer V8  { role = cut; gds = [62, 0] }
+layer M9  { role = conductor; direction = vertical;   width = 38nm;  pitch = 76nm;  gds = [65, 0]; gds_pin = [65, 251]; gds_label = [65, 20] }      # tech.lef:402-413
+layer V9  { role = cut; gds = [67, 0] }
+layer M10 { role = conductor; direction = horizontal; width = 56nm;  pitch = 112nm; gds = [70, 0]; gds_pin = [70, 251]; gds_label = [70, 20] }      # tech.lef:421-430
+layer V10 { role = cut; gds = [72, 0] }
+layer M11 { role = conductor; direction = vertical;   width = 56nm;  pitch = 112nm; gds = [75, 0]; gds_pin = [75, 251]; gds_label = [75, 20] }      # tech.lef:438-447
+layer V11 { role = cut; gds = [77, 0] }
+layer M12 { role = conductor; direction = horizontal; width = 360nm; pitch = 720nm; gds = [80, 0]; gds_pin = [80, 251]; gds_label = [80, 20] }      # tech.lef:455-464
+layer V12 { role = cut; gds = [82, 0] }
+layer M13 { role = conductor; direction = vertical;   width = 360nm; pitch = 720nm; gds = [85, 0]; gds_pin = [85, 251]; gds_label = [85, 20] }      # tech.lef:472-481
+layer V13 { role = cut; gds = [87, 0] }
+layer RDL { role = conductor; direction = horizontal; width = 1600nm; pitch = 3200nm; gds = [90, 0]; gds_pin = [90, 251]; gds_label = [90, 20] }    # tech.lef:489-495
+
+figure M1_WIRE { layer = M1; width = 14nm }
+array  M1_CELL_GRID { of = M1_WIRE; axis = x; pitch = CPP/2; offset = 0nm; count = fill }   # ev/lef_track_census_w31_lvt.txt:5
+
+connector VIA0  { lower = M0;  cut = V0;  upper = M1;  size = [14nm, 12nm];   enclose_lower = [4nm, 0nm];  enclose_upper = [0nm, 4nm] }   # tech.lef:724-732
+connector VIA1  { lower = M1;  cut = V1;  upper = M2;  size = [14nm, 12nm];   enclose_lower = [0nm, 4nm];  enclose_upper = [4nm, 0nm] }   # tech.lef:734-742
+connector VIA2  { lower = M2;  cut = V2;  upper = M3;  size = [14nm, 12nm];   enclose_lower = [4nm, 0nm];  enclose_upper = [0nm, 4nm] }   # tech.lef:744-752
+connector VIA3  { lower = M3;  cut = V3;  upper = M4;  size = [14nm, 21nm];   enclose_lower = [0nm, 4nm];  enclose_upper = [4nm, 0nm] }   # tech.lef:754-762
+connector VIA4  { lower = M4;  cut = V4;  upper = M5;  size = [21nm, 21nm];   enclose_lower = [5nm, 0nm];  enclose_upper = [0nm, 5nm] }   # tech.lef:764-772
+connector VIA5  { lower = M5;  cut = V5;  upper = M6;  size = [21nm, 38nm];   enclose_lower = [0nm, 6nm];  enclose_upper = [6nm, 0nm] }   # tech.lef:774-782
+connector VIA6  { lower = M6;  cut = V6;  upper = M7;  size = [38nm, 38nm];   enclose_lower = [8nm, 0nm];  enclose_upper = [0nm, 8nm] }   # tech.lef:784-792
+connector VIA7  { lower = M7;  cut = V7;  upper = M8;  size = [38nm, 38nm];   enclose_lower = [0nm, 8nm];  enclose_upper = [8nm, 0nm] }   # tech.lef:794-802
+connector VIA8  { lower = M8;  cut = V8;  upper = M9;  size = [38nm, 38nm];   enclose_lower = [8nm, 0nm];  enclose_upper = [0nm, 8nm] }   # tech.lef:804-812
+connector VIA9  { lower = M9;  cut = V9;  upper = M10; size = [38nm, 56nm];   enclose_lower = [0nm, 10nm]; enclose_upper = [10nm, 0nm] }  # tech.lef:814-822
+connector VIA10 { lower = M10; cut = V10; upper = M11; size = [56nm, 56nm];   enclose_lower = [12nm, 0nm]; enclose_upper = [0nm, 12nm] }  # tech.lef:824-832
+connector VIA11 { lower = M11; cut = V11; upper = M12; size = [56nm, 360nm];  enclose_lower = [0nm, 12nm]; enclose_upper = [12nm, 0nm] }  # tech.lef:834-842
+connector VIA12 { lower = M12; cut = V12; upper = M13; size = [360nm, 360nm]; enclose_lower = [20nm, 0nm]; enclose_upper = [0nm, 20nm] }  # tech.lef:844-852
+connector VIA13 { lower = M13; cut = V13; upper = RDL; size = [360nm, 1600nm]; enclose_lower = [0nm, 40nm]; enclose_upper = [200nm, 0nm] } # tech.lef:854-862
+
+rule M0_W   { kind = width;       on = M0; value = 12nm; axis = y }                  # gt2.m0.drc:30-31 (exact)
+rule M1_W   { kind = width;       on = M1; value = 14nm; axis = x }                  # gt2.m1.drc:31-32
+rule M0_L   { kind = min_length;  on = M0; value = 24nm; axis = x }                  # gt2.m0.drc:35-36
+rule M1_L   { kind = min_length;  on = M1; value = 28nm; axis = y }                  # gt2.m1.drc:35-36
+rule M0_S   { kind = spacing;     on = M0; value = 12nm; axis = y }                  # gt2.m0.drc:39-40
+rule M1_S   { kind = spacing;     on = M1; value = 14nm; axis = x }                  # gt2.m1.drc:39-40
+rule M2_S_SN { kind = spacing;    on = M2; value = 12nm; same_net = true }           # tech.lef:251
+rule M0_EOL { kind = eol_spacing; on = M0; width_below = 15nm; value = 17nm }        # tech.lef:215 ; gt2.m0.drc:43-44
+rule M1_EOL { kind = eol_spacing; on = M1; width_below = 16nm; value = 20nm }        # tech.lef:234 ; gt2.m1.drc:43-44
+rule M4_EOL { kind = eol_spacing; on = M4; width_below = 22nm; value = 30nm }        # tech.lef:301
+rule V0_CS  { kind = cut_spacing; on = V0; value = 12nm }                            # tech.lef:222
+rule V0_M0_EN { kind = enclosure; on = [V0, M0]; value = 4nm; axis = x }             # gt2.v0.drc:61-62
+rule V0_M1_EN { kind = enclosure; on = [V0, M1]; value = 4nm; axis = y }             # gt2.v0.drc:65-66
+rule M0_AREA { kind = area; on = M0; value = 288nm * 1nm }                           # tech.lef:212
+rule M1_AREA { kind = area; on = M1; value = 392nm * 1nm }                           # tech.lef:231
+rule M4_AREA { kind = area; on = M4; value = 882nm * 1nm }                           # tech.lef:298
+rule M0_CORNER { kind = corner_spacing; on = M0; value = 15nm }                    # gt2.m0.drc:47-48 ; tech.lef:216
+rule V0_CORNER { kind = corner_spacing; on = V0; value = 18nm }                    # gt2.v0.drc:53-54
+
+check M0_FITS { holds = M0.pitch >= M0.width + M0_S.value; message = "the M0 pitch cannot hold one wire plus the minimum spacing" }
+check M1_FITS { holds = M1.pitch >= M1.width + M1_S.value; message = "the M1 pitch cannot hold one wire plus the minimum spacing" }

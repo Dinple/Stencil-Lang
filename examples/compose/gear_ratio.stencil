@@ -1,0 +1,18 @@
+stencil 0.1
+# Level 3: a technology composed from two modules (see the other tabs).
+# Try it: set GEAR = 1/2. The front-side module's own check fails, because
+# 22.5nm cannot hold a 14nm wire plus 13nm spacing (and it is off-grid too).
+
+GEAR = 2/3                    # M1 pitch : gate pitch
+
+technology { grid = 0.5nm; stack = [dev, fs] }
+
+import "./lib/device"    as dev { H_ROW = 9 * 24nm }
+import "./lib/frontside" as fs  { MP1 = GEAR * dev.CPP; LANDING = dev.GATE }
+
+&dev.CORE {
+  rail VDD { layer = fs.M0; edge = top;    width = 24nm }
+  rail VSS { layer = fs.M0; edge = bottom; width = 24nm }
+  tracks M0 { use = 1..7 }        # 0-based; tracks 0 and 8 lie under the rails
+  pins = [fs.M0, fs.M1]
+}

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stencil Playground</title>
+  <script>try { const t = localStorage.getItem('stencil.playground.theme'); if (t) document.documentElement.dataset.theme = t; } catch {}</script>
+  <link rel="stylesheet" href="style.css">
+  <style id="hl-style"></style>
+</head>
+<body>
+  <header class="masthead">
+    <h1>Stencil <span>technology description playground, core 0.1, std/0</span></h1>
+    <nav class="actions">
+      <select id="examples" aria-label="Load an example"></select>
+      <button id="share" title="Copy a link that contains this description">Share link</button>
+      <button id="theme" title="Switch between light and dark">Dark</button>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="window" id="editor-win">
+      <div class="titlebar tabs" id="file-tabs"></div>
+      <div id="editor"></div>
+    </section>
+    <div id="splitter" title="Drag to resize"></div>
+    <div id="viz-pane">
+      <section class="window" id="top-win">
+        <div class="titlebar"><span class="title">Top view</span></div>
+        <div class="toolbar">
+          <div id="legend"></div>
+          <span class="hint">scroll: zoom, drag: pan, double-click: fit, click: find in code</span>
+        </div>
+        <div class="canvas" id="top"></div>
+      </section>
+      <section class="window" id="bottom-win">
+        <div class="titlebar tabs">
+          <button data-tab="stack" class="title active">Stack</button>
+          <button data-tab="device" class="title">Device</button>
+          <button data-tab="json" class="title">Resolved JSON</button>
+        </div>
+        <div class="pane" id="stack"></div>
+        <div class="pane" id="device" hidden></div>
+        <pre class="pane" id="json" hidden></pre>
+      </section>
+    </div>
+  </main>
+
+  <section class="window" id="lint-win">
+    <div class="titlebar"><span class="title">Lint</span></div>
+    <div class="lint-head">
+      <span id="diag-summary"></span>
+      <button id="fix-all" hidden>Fix all</button>
+      <span class="meta"><span id="objects"></span><span id="hash"></span></span>
+    </div>
+    <div id="diag-list" hidden></div>
+  </section>
+
+  <div id="defs"></div>
+  <div id="toast" role="status"></div>
+  <script type="module" src="main.js"></script>
+</body>
+</html>

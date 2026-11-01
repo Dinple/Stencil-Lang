@@ -1,0 +1,27 @@
+stencil 0.1
+# A nanosheet device tier, as a module. It knows nothing about the metals above it.
+
+CPP  = 45nm
+H_ROW = required              # the importer decides the row height
+
+layer CH   { role = channel;   gds = [2, 0] }
+layer GATE { role = conductor; direction = vertical; gds = [7, 0] }
+layer MD   { role = conductor; direction = vertical; gds = [8, 0]; level_with = GATE }
+
+figure SHEET   { layer = CH; width = one_of(15nm, 25nm, 35nm); thickness = 5nm }
+figure GATE_LN { layer = GATE; width = 16nm }
+array  SHEETS  { of = SHEET;   axis = z; pitch = 12nm; count = 3 }
+array  GATES   { of = GATE_LN; axis = x; pitch = CPP;  count = fill }
+
+cross FET {
+  gate = GATE; channel = SHEETS; faces = all
+  size w { sets = SHEET.width }
+}
+
+stratum DEV { layers = [CH, MD]; polarity = [n, p] }
+
+site CORE {
+  width = CPP; height = H_ROW
+  band p { stratum = DEV; y = H_ROW/2 .. H_ROW }
+  band n { stratum = DEV; y = 0nm .. H_ROW/2 }
+}

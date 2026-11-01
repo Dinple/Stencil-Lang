@@ -1,0 +1,52 @@
+stencil 0.1
+# A second synthetic technology for the query API tests: partial table
+# indices, exact rules among bounds, rules on derived operands and connectors,
+# routing without a site anchor, two top-level sites.
+technology { grid = 1nm }
+
+layer CH { role = channel }
+layer G  { role = conductor; direction = vertical; width = 10nm; pitch = 40nm }
+layer A  { role = conductor; direction = horizontal; pitch = 20nm }
+layer V  { role = cut }
+layer B  { role = conductor; direction = vertical; pitch = 30nm }
+layer C  { role = conductor; direction = horizontal; pitch = 20nm }
+layer D  { role = conductor; direction = horizontal; pitch = 20nm }
+layer MK { role = marker }
+layer GA { role = marker; from = grow(A, 1nm) }
+region RA { from = intersect(A, MK) }
+
+connector CX { lower = A; cut = V; upper = B }
+
+# tables with one index or none
+rule B_SP  { kind = spacing; on = B
+  table { prl = [0nm, 10nm]; values = [[3nm, 9nm]] } }
+rule B_SN  { kind = spacing; on = [B, C]
+  table { values = [[5nm]] } }
+
+# exact rules among bounds
+rule C_WE  { kind = width; on = C; limit = exact; value = 10nm }
+rule C_WM  { kind = width; on = C; value = 8nm }
+rule D_WE  { kind = width; on = D; limit = exact; value = 10nm }
+rule D_WM  { kind = width; on = D; value = 12nm }
+rule D_WX  { kind = width; on = D; limit = max; value = 9nm }
+
+# rules that constrain A without naming it
+rule A_W   { kind = width; on = A; value = 6nm }
+rule RA_W  { kind = width; on = RA; value = 9nm }
+rule GA_S  { kind = spacing; on = GA; value = 7nm }
+rule A_S   { kind = spacing; on = A; value = 5nm }
+rule CX_S  { kind = cut_spacing; on = CX; value = 11nm }
+rule V_S   { kind = cut_spacing; on = V; value = 4nm }
+rule V_A   { kind = enclosure; on = [V, A]
+  alternative long  { margins = [4nm, 4nm, 0nm, 0nm] }
+  alternative short { margins = [0nm, 0nm, 4nm, 4nm] } }
+rule V_GA  { kind = enclosure; on = [V, GA]; value = 1nm }
+rule V_B   { kind = enclosure; on = [V, B]; value = 2nm }
+
+figure FIN { layer = CH; width = 6nm; thickness = 30nm }
+cross DEV { gate = G; channel = FIN; faces = [top, left, right] }
+stratum S { layers = [CH] }
+
+# two top-level sites, neither with pins or tracks
+site LEFT  { width = 40nm; height = 200nm }
+site RIGHT { width = 40nm; height = 200nm }

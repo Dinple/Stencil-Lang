@@ -1,0 +1,49 @@
+stencil 0.1
+# Level 1: a nanosheet technology with a 3:2 gear ratio between M1 and the gate grid.
+# Try it: change CPP and watch the M1 grid follow; change the sheet count.
+
+technology { grid = 1nm }
+
+CPP   = 45nm
+MP0   = 24nm
+MP1   = 2/3 * CPP          # gear ratio M1 : gate = 3 : 2
+H_row = 9 * MP0            # 9 M0 tracks per row
+
+# ---- stack, bottom to top ----
+layer CH   { role = channel; gds = [2, 0] }
+layer GATE { role = conductor; direction = vertical; gds = [7, 0] }
+layer MD   { role = conductor; direction = vertical; gds = [8, 0] }
+layer V0   { role = cut; gds = [18, 0] }
+layer M0   { role = conductor; direction = horizontal; width = 12nm; pitch = MP0; offset = MP0/2; masks = 2; gds = [15, 0] }
+layer V1   { role = cut; gds = [21, 0] }
+layer M1   { role = conductor; direction = vertical; width = 14nm; pitch = MP1; offset = MP1/2; gds = [19, 0] }
+
+# ---- devices ----
+figure SHEET   { layer = CH; width = one_of(15nm, 25nm, 35nm); thickness = 5nm }
+figure GATE_LN { layer = GATE; width = 16nm; extend = CH; extend_by = 10nm }
+
+array SHEETS { of = SHEET;   axis = z; pitch = 12nm; count = 3 }
+array GATES  { of = GATE_LN; axis = x; pitch = CPP;  count = fill }
+
+cross FET {
+  gate = GATE; channel = SHEETS; faces = all
+  size w { sets = SHEET.width }     # netlist w -> sheet width
+}
+
+stratum DEV { layers = [CH, MD]; polarity = [n, p] }
+
+# ---- connections ----
+connector VG  { lower = [GATE, MD]; cut = V0; upper = M0; size = 12nm }
+connector VIA1 { lower = M0; cut = V1; upper = M1; size = 12nm }
+
+# ---- cell template ----
+site CORE {
+  width  = CPP
+  height = H_row
+  rail VDD { layer = M0; edge = top;    width = 24nm }
+  rail VSS { layer = M0; edge = bottom; width = 24nm }
+  band p { stratum = DEV; y = H_row/2 .. H_row }
+  band n { stratum = DEV; y = 0nm .. H_row/2 }
+  tracks M0 { use = 1..7 }        # 0-based; tracks 0 and 8 lie under the rails
+  pins = [M0, M1]
+}

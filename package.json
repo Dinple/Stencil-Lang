@@ -1,0 +1,6 @@
+{
+  "name": "stencil-core",
+  "private": true,
+  "description": "Stencil front end: plain ES modules (core/, cli.mjs, playground/). The VS Code extension has its own package.json.",
+  "type": "module"
+}

@@ -1,0 +1,142 @@
+{
+  "name": "stencil-lang",
+  "displayName": "Stencil",
+  "description": "Stencil technology descriptions: highlighting, live diagnostics with quick fixes, completion, hover docs, and a live preview of the stack, top view and devices.",
+  "version": "0.1.0",
+  "publisher": "dinple",
+  "license": "BSD-3-Clause",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Dinple/Stencil-Lang"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters",
+    "Visualization"
+  ],
+  "keywords": [
+    "stencil",
+    "pdk",
+    "technology file",
+    "semiconductor",
+    "standard cell"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onLanguage:stencil",
+    "workspaceContains:**/*.stencil"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "stencil",
+        "aliases": [
+          "Stencil",
+          "stencil"
+        ],
+        "extensions": [
+          ".stencil"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "stencil",
+        "scopeName": "source.stencil",
+        "path": "./syntaxes/stencil.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "stencil.openPreview",
+        "title": "Open Preview",
+        "category": "Stencil",
+        "icon": "$(open-preview)"
+      },
+      {
+        "command": "stencil.openPreviewToSide",
+        "title": "Open Preview to the Side",
+        "category": "Stencil",
+        "icon": "$(open-preview)"
+      },
+      {
+        "command": "stencil.showResolved",
+        "title": "Show Resolved JSON",
+        "category": "Stencil"
+      },
+      {
+        "command": "stencil.fixAll",
+        "title": "Apply All Quick Fixes in This File",
+        "category": "Stencil"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "stencil.openPreviewToSide",
+          "when": "editorLangId == stencil",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "stencil.openPreview",
+          "when": "editorLangId == stencil"
+        },
+        {
+          "command": "stencil.openPreviewToSide",
+          "when": "editorLangId == stencil"
+        },
+        {
+          "command": "stencil.showResolved",
+          "when": "editorLangId == stencil"
+        },
+        {
+          "command": "stencil.fixAll",
+          "when": "editorLangId == stencil"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "stencil.openPreviewToSide",
+        "key": "ctrl+k v",
+        "mac": "cmd+k v",
+        "when": "editorLangId == stencil"
+      }
+    ],
+    "configuration": {
+      "title": "Stencil",
+      "properties": {
+        "stencil.root": {
+          "type": "string",
+          "default": "",
+          "description": "Folder that import paths are resolved from, relative to the workspace folder. Empty: the workspace folder (or the file's folder outside a workspace)."
+        },
+        "stencil.diagnostics.delay": {
+          "type": "number",
+          "default": 250,
+          "minimum": 0,
+          "description": "Milliseconds to wait after an edit before resolving again."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "watch": "node build.mjs --watch",
+    "test": "node --test test/*.test.mjs",
+    "package": "node build.mjs && vsce package --no-dependencies",
+    "vscode:prepublish": "node build.mjs",
+    "test:integration": "node build.mjs && node test/integration/run.mjs"
+  },
+  "devDependencies": {
+    "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.2.1",
+    "esbuild": "^0.24.0"
+  }
+}

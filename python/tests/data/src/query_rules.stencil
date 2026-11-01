@@ -1,0 +1,88 @@
+stencil 0.1
+# A synthetic technology for the query API tests: one rule per semantic case.
+technology { grid = 0.5nm }
+
+layer FIN  { role = channel }
+layer GATE { role = conductor; direction = vertical; width = 20nm; pitch = 54nm }
+layer M1   { role = conductor; direction = horizontal; width = 10nm .. 40nm; pitch = 32nm; offset = 16nm; masks = 2 }
+layer V1   { role = cut }
+layer M2   { role = conductor; direction = vertical; width = one_of(12nm, 20nm); pitch = 40nm }
+layer LVT  { role = marker }
+layer ULVT { role = marker }
+layer DOP  { role = marker }
+layer HOT  { role = marker }
+
+# width: one plain, one along an axis, an upper limit, an exact one
+rule M1_W    { kind = width; on = M1; value = 10nm }
+rule M1_WX   { kind = width; on = M1; axis = x; value = 30nm }
+rule M1_WMAX { kind = width; on = M1; limit = max; value = 40nm }
+rule M2_WEX  { kind = width; on = M2; limit = exact; value = 12nm }
+rule M2_WEX2 { kind = width; on = M2; limit = exact; value = 20nm; scope = HOT }
+rule M1_L    { kind = min_length; on = M1; value = 50nm }
+rule M1_L2   { kind = length; on = M1; value = 60.5nm; scope = HOT }
+rule M1_A    { kind = area; on = M1; value = 300nm * 2nm }
+
+# spacing: a base value, conditions, a table, a checker-only rule
+rule M1_S    { kind = spacing; on = M1; value = 12nm }
+rule M1_SN   { kind = spacing; on = M1; same_net = false; value = 14nm }
+rule M1_SC   { kind = spacing; on = M1; same_color = true; value = 20nm }
+rule M1_SW   { kind = spacing; on = M1; width_above = 30nm; prl = 100nm; value = 24nm }
+rule M1_ST   { kind = spacing; on = M1
+  table { width = [0nm, 20nm, 40nm]; prl = [0nm, 50nm]; values = [[12nm, 13nm], [16nm, 18nm], [22nm, 26nm]] } }
+rule M1_SCK  { kind = spacing; on = M1; value = 99nm; intent = checker_only }
+rule M1_M2_S { kind = spacing; on = [M2, M1]; value = 3nm }
+rule M2_S    { kind = spacing; on = M2
+  table { width = [0nm, 16nm]; values = [[12nm], [18nm]] } }
+rule M2_EOL  { kind = eol_spacing; on = M2; width_below = 14nm; value = 16nm }
+
+# cuts
+connector VIA1 { lower = M1; cut = V1; upper = M2; size = [10nm, 12nm]; enclose_lower = [5nm, 0nm]; enclose_upper = 2nm }
+rule V1_S    { kind = cut_spacing; on = V1; value = 20nm }
+rule V1_SC   { kind = cut_spacing; on = V1; measure = center; value = 32nm }
+rule V1_M1   { kind = enclosure; on = [V1, M1]
+  alternative end  { margins = [5nm, 5nm, 0nm, 0nm] }
+  alternative side { margins = [0nm, 0nm, 5nm, 5nm] } }
+rule V1_M1X  { kind = enclosure; on = [V1, M1]; axis = x; value = 2nm }
+rule V1_M1W  { kind = enclosure; on = [V1, M1]; width_above = 30nm; value = 8nm }
+rule VIA1_E  { kind = enclosure; on = VIA1; value = 1nm }
+rule V1_M2   { kind = enclosure; on = [V1, M2]; axis = y; value = 3nm }
+rule M2_LEN  { kind = length; on = M2
+  case via_end { value = 30nm }
+  case open_end { value = 40nm } }
+rule GATE_EXT { kind = extension; on = [GATE, FIN]; axis = y; value = 15nm }
+rule M1_LAB  { kind = x_lab_corner; on = M1; value = 4nm }
+
+# a FinFET with a fin count and a fixed gate length
+figure FIN_F   { layer = FIN; width = 7nm; thickness = 46nm }
+figure GATE_LN { layer = GATE; width = 20nm }
+array  FINS    { of = FIN_F; axis = y; pitch = 27nm; count = 1..4 }
+cross FET {
+  gate = GATE; channel = FINS; faces = [top, left, right]
+  size nfin { sets = FINS.count }
+  model nch_svt  { polarity = n; exclude = [LVT, ULVT] }
+  model nch_lvt  { polarity = n; marker = LVT; exclude = [ULVT] }
+  model nch_ulvt { polarity = n; markers = [LVT, ULVT] }
+  model pch_svt  { polarity = p }
+  model pch_dop  { polarity = p; marker = DOP }
+}
+stratum DEV { layers = [FIN] }
+
+site CORE { width = 54nm; height = 256nm; pins = [M1]
+  rail VDD { layer = M1; edge = top; width = 32nm }
+  rail VSS { layer = M1; edge = bottom; width = 32nm }
+  band n { stratum = DEV; y = 0nm .. 128nm }
+  band p { stratum = DEV; y = 128nm .. 256nm }
+  tracks M1 { use = 1..6 }
+  edge_feature DUMMY { layer = GATE; width = 20nm }
+}
+
+profile simple {
+  directions = [horizontal, vertical]; needs_tracks = true; masks = 1
+  rule_kinds = [width, spacing, enclosure, cut_spacing, min_length, area, length, eol_spacing, extension]
+  rule_features = [axis, same_net, prl, table, width_above, width_below, alternative, scope, case]
+}
+profile capable {
+  directions = [horizontal, vertical]; masks = 1 .. 3
+  rule_kinds = [width, spacing, enclosure, cut_spacing, min_length, area, length, eol_spacing, extension]
+  rule_features = [axis, same_net, same_color, prl, table, width_above, width_below, alternative, scope, case, limit_max, limit_exact, measure_center]
+}

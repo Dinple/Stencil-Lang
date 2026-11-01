@@ -1,0 +1,24 @@
+stencil 0.1
+# GT2N buried power rail (BPR) and its tap to the source/drain contact.
+# Kept in both power-delivery variants: only how the rail is fed changes.
+
+module { version = "0.2.0" }
+technology { grid = 0.5nm }
+
+W_RAIL  = 32nm                       # gt2.bpr.drc:31 BRP.1 exact
+H_ROW   = required                   # rails sit on every row edge
+SD_LAND = required                   # the contact layer VBPR lands on (GT2N: SDCON)
+CHANNEL = required                   # the channel layer the rail keeps clear of (GT2N: ACT)
+GCUT    = required
+
+layer BPR  { role = conductor; side = device; direction = horizontal; width = W_RAIL; pitch = H_ROW; offset = 0nm   # tech.lef:150-158
+             gds = [8, 0]; gds_pin = [8, 251]; gds_label = [8, 20] }                # lmap:53-55
+layer VBPR { role = cut; side = device; gds = [9, 0] }                              # lmap:56
+
+connector CVBPR { lower = BPR; cut = VBPR; upper = SD_LAND; size = [16nm, 11nm] }   # gt2.vbpr.drc:31-37 ; drc.rs:134
+
+rule BPR_W     { kind = width;   on = BPR; value = 32nm; axis = y }                 # gt2.bpr.drc:31-32
+rule BPR_S     { kind = spacing; on = BPR; value = 112nm; axis = y }                # gt2.bpr.drc:36-37
+rule BPR_AREA  { kind = area;    on = BPR; value = 100nm * 1nm }                    # tf:848
+rule ACT_BPR_S { kind = spacing; on = [CHANNEL, BPR]; value = 10nm; axis = y }      # gt2.act.drc:56-57
+rule VBPR_NO_GCUT { kind = not_overlapping; on = [VBPR, GCUT] }   # gt2.vbpr.drc:41-42 (include_touch = NONE: touching allowed)

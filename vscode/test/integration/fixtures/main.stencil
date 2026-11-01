@@ -1,0 +1,8 @@
+stencil 0.1
+technology { grid = 1nm }
+
+import "lib/front" as fs { MP = 30nm }
+
+layer V1 { role = cut }
+layer M2 { role = conductor; direction = horizontal; pitch = 2/3 * 44nm }
+connector VIA1 { lower = fs.M1; cut = V1; upper = M2 }

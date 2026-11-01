@@ -1,0 +1,19 @@
+stencil 0.1
+# GT2N as shipped: backside power delivery (techlib/gt2_tech.lef).
+
+module { version = "0.2.0" }
+technology { grid = 0.5nm; stack = [bs, rail, dev, fs] }   # bottom to top
+
+import "./backside"  as bs   { RAIL = rail.BPR }
+import "./rail"      as rail { H_ROW = dev.H_ROW; SD_LAND = dev.SDCON; CHANNEL = dev.ACT; GCUT = dev.GCUT }
+import "./device"    as dev  { LANDING = fs.M0 }
+import "./frontside" as fs   { CPP = dev.CPP }
+
+&dev.gt2_6t {
+  rail vdd { layer = rail.BPR; edge = top;    width = rail.W_RAIL }   # cell.lef:64-71
+  rail vss { layer = rail.BPR; edge = bottom; width = rail.W_RAIL }   # cell.lef:72-79
+  pins = [fs.M1]                                                      # cell.lef:52
+  tracks M0 { use = 1..5 }                                            # ev/lef_track_census_w31_lvt.txt:2
+}
+
+check ROW_TRACKS { holds = mod(dev.H_ROW, fs.MP0) == 0nm; message = "the row height is not a whole number of M0 pitches" }

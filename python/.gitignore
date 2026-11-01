@@ -1,0 +1,4 @@
+build/
+stencil/_resolver/
+__pycache__/
+*.egg-info/

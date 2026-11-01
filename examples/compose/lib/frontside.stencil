@@ -1,0 +1,23 @@
+stencil 0.1
+# A front-side interconnect module. Its importer chooses the M1 pitch (the
+# gear ratio) and the device layer that V0 lands on; its own check makes sure
+# the chosen pitch still fits an M1 wire plus the minimum spacing.
+
+MP0     = 24nm
+MP1     = required
+LANDING = required
+
+layer V0 { role = cut; gds = [18, 0] }
+layer M0 { role = conductor; direction = horizontal; width = 12nm; pitch = MP0; offset = MP0/2; masks = 2; gds = [15, 0] }
+layer V1 { role = cut; gds = [21, 0] }
+layer M1 { role = conductor; direction = vertical; width = 14nm; pitch = MP1; offset = MP1/2; gds = [19, 0] }
+
+connector VG   { lower = LANDING; cut = V0; upper = M0; size = 12nm }
+connector VIA1 { lower = M0; cut = V1; upper = M1; size = 12nm }
+
+rule M1_SP { kind = spacing; on = M1; value = 13nm }
+
+check M1_FITS {
+  holds   = M1.pitch >= M1.width + M1_SP.value
+  message = "the M1 pitch cannot hold one wire plus the minimum spacing"
+}

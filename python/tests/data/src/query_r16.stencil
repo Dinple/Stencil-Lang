@@ -1,0 +1,10 @@
+stencil 0.1
+# a device whose size parameter has a fixed value.
+technology { grid = 1nm }
+layer CH { role = channel }
+layer G  { role = conductor }
+figure F { layer = CH; width = 10nm; thickness = 2nm }
+cross D {
+  gate = G; channel = F; faces = all
+  size w { sets = F.width }
+}

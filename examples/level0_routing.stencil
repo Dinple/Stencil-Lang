@@ -1,0 +1,20 @@
+stencil 0.1
+# Level 0: a routing-only technology, roughly what a tech LEF holds.
+# Try it: change a pitch or the row height and watch the drawing update.
+
+technology { grid = 1nm }
+
+# Layers are listed bottom to top; the order is the vertical stack.
+layer M0 { role = conductor; direction = horizontal; width = 20nm; pitch = 40nm; gds = [15, 0] }
+layer V0 { role = cut; gds = [18, 0] }
+layer M1 { role = conductor; direction = vertical; width = 24nm; pitch = 48nm; offset = 24nm; gds = [19, 0] }
+
+connector VIA0 { lower = M0; cut = V0; upper = M1; size = [20nm, 20nm] }
+
+site CORE {
+  width  = 48nm
+  height = 240nm
+  rail VDD { layer = M0; edge = top }
+  rail VSS { layer = M0; edge = bottom }
+  pins = [M1]
+}

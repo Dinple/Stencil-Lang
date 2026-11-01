@@ -1,0 +1,59 @@
+stencil 0.1
+# exact rules against bounds in both directions,
+# regions of regions, connectors whose layers are computed.
+technology { grid = 1nm }
+
+layer X  { role = conductor }
+layer Y  { role = conductor }
+layer Z  { role = conductor }
+rule X_E { kind = width; on = X; limit = exact; value = 10nm }
+rule X_M { kind = width; on = X; limit = max; value = 5nm }
+rule Y_E { kind = width; on = Y; limit = exact; value = 10nm }
+rule Y_X { kind = width; on = Y; limit = max; value = 12nm }
+rule Y_N { kind = width; on = Y; value = 8nm }
+rule Z_N { kind = width; on = Z; value = 8nm }
+rule Z_X { kind = width; on = Z; limit = max; value = 5nm }
+
+layer A  { role = conductor }
+region R1 { from = grow(A, 1nm) }
+region R2 { from = grow(R1, 1nm) }
+rule W1  { kind = width; on = R1; value = 4nm }
+rule W2  { kind = width; on = R2; value = 20nm }
+
+layer A3  { role = conductor }
+layer GA3 { role = conductor; from = grow(A3, 1nm) }
+layer V3  { role = cut }
+layer B3  { role = conductor }
+connector C3 { lower = GA3; cut = V3; upper = B3 }
+rule E3  { kind = enclosure; on = C3; value = 3nm }
+rule D3  { kind = enclosure; on = [V3, A3]; value = 1nm }
+
+# an exact width against a maximum on a derived
+# layer; a connector with a direct lower layer and a computed upper layer.
+layer EA  { role = conductor }
+region ER { from = grow(EA, 1nm) }
+rule EA_E { kind = width; on = EA; limit = exact; value = 10nm }
+rule ER_M { kind = width; on = ER; limit = max; value = 5nm }
+
+layer A4  { role = conductor }
+layer V4  { role = cut }
+layer SA4 { role = conductor; from = shrink(A4, 1nm) }
+connector C4 { lower = A4; cut = V4; upper = SA4 }
+rule E4   { kind = enclosure; on = C4; value = 3nm }
+
+# cut-layer rules apply to a connector's cuts.
+layer A5  { role = conductor }
+layer V5  { role = cut }
+layer B5  { role = conductor }
+connector C5 { lower = A5; cut = V5; upper = B5 }
+rule CV   { kind = cut_spacing; on = C5; value = 2nm }
+rule LV   { kind = cut_spacing; on = V5; value = 10nm }
+
+# a scalar enclosure on a connector against rules
+# on its [cut, layer] pairs.
+layer A6  { role = conductor }
+layer V6  { role = cut }
+layer B6  { role = conductor }
+connector C6 { lower = A6; cut = V6; upper = B6 }
+rule CE   { kind = enclosure; on = C6; value = 2nm }
+rule LA   { kind = enclosure; on = [V6, A6]; value = 10nm }
