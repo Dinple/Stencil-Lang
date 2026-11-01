@@ -24,6 +24,7 @@ suppress_warnings = ['myst.xref_missing']
 html_theme = 'sphinx_book_theme'
 html_title = 'Stencil'
 html_static_path = ['_static']
+html_favicon = '_static/stencil-symbol.svg'
 html_css_files = ['stencil.css']
 html_theme_options = {
     'repository_url': 'https://github.com/Dinple/Stencil-Lang',
@@ -35,6 +36,11 @@ html_theme_options = {
     'use_download_button': True,
     'show_navbar_depth': 2,
     'show_toc_level': 2,
+    'logo': {
+        'image_light': '_static/stencil-horizontal.svg',
+        'image_dark': '_static/stencil-horizontal-dark.svg',
+        'alt_text': 'Stencil',
+    },
 }
 
 # The language, vocabulary and API documents live in doc/ at the top of the

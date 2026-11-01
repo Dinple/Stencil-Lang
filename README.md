@@ -1,4 +1,9 @@
-# Stencil
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/_static/stencil-logo-dark.svg">
+    <img src="docs/_static/stencil-logo.svg" alt="Stencil" width="320">
+  </picture>
+</p>
 
 Stencil is a small, declarative language for describing a semiconductor
 technology for standard-cell work: layers and their order, routing grids,
