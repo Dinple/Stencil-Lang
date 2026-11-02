@@ -65,6 +65,8 @@ async function loadExample(mainPath) {
     try { text = await fetchText(p); } catch { continue; }
     files.set(p, text);
     for (const st of parse(text).ast.stmts) if (st.type === 'Import') queue.push(resolvePath(p, st.path));
+    // also modules named by commented-out imports, so a demo can switch to them by uncommenting
+    for (const m of text.matchAll(/^[ \t]*#[ \t]*import[ \t]+"([^"]+)"/gm)) queue.push(resolvePath(p, m[1]));
   }
   return files;
 }
@@ -213,7 +215,9 @@ function update() {
   try {
     const model = buildModel(r.resolved, theme());
     $('defs').innerHTML = swatchDefs(model);
-    const top = renderTop(model, state.hidden);
+    // ?layers=A,B,... shows only those layers (also after an edit brings in new ones)
+    state.hiddenNow = state.only ? new Set([...model.style.keys()].filter((n) => !state.only.has(n))) : state.hidden;
+    const top = renderTop(model, state.hiddenNow);
     $('top').innerHTML = top.svg;
     topZoom.apply();
     renderLegend(top.legend);
@@ -331,23 +335,30 @@ function renderLegend(items) {
     all.textContent = label;
     all.title = hide ? 'hide every layer' : 'show every layer';
     all.addEventListener('click', () => {
-      for (const it of items) if (hide) state.hidden.add(it.name); else state.hidden.delete(it.name);
-      store.set(KEYS.hidden, JSON.stringify([...state.hidden]));
+      if (state.only && hide) state.only.clear();
+      else {
+        if (!hide) state.only = null;
+        for (const it of items) if (hide) state.hidden.add(it.name); else state.hidden.delete(it.name);
+        store.set(KEYS.hidden, JSON.stringify([...state.hidden]));
+      }
       update();
     });
     box.appendChild(all);
   }
   for (const it of items) {
     const chip = document.createElement('button');
-    chip.className = `legend-chip${state.hidden.has(it.name) ? ' off' : ''}`;
+    chip.className = `legend-chip${(state.hiddenNow ?? state.hidden).has(it.name) ? ' off' : ''}`;
     chip.dataset.name = it.name;
     chip.title = 'click: hide / show, shift-click: go to definition';
     chip.innerHTML = `${it.swatch}${it.name}`;
     chip.addEventListener('click', (e) => {
       const loc = parseSrc(it.src);
       if (e.shiftKey && loc) { goTo(loc.file, loc.line, loc.col); return; }
-      if (state.hidden.has(it.name)) state.hidden.delete(it.name); else state.hidden.add(it.name);
-      store.set(KEYS.hidden, JSON.stringify([...state.hidden]));
+      if (state.only) { if (state.only.has(it.name)) state.only.delete(it.name); else state.only.add(it.name); }
+      else {
+        if (state.hidden.has(it.name)) state.hidden.delete(it.name); else state.hidden.add(it.name);
+        store.set(KEYS.hidden, JSON.stringify([...state.hidden]));
+      }
       update();
     });
     box.appendChild(chip);
@@ -437,11 +448,13 @@ function toast(msg) {
 }
 
 // ?tab=device|json opens that tab; ?theme=dark|light forces the theme;
+// ?layers=FIN,GATE,M2 shows only those layers in the top view (All on leaves this mode);
 // ?example=PATH (a menu entry's main file, e.g. transplant/probe3_asap7_grid.stencil)
 // or ?example=N (its position in the menu) loads an example, for links in the docs
 const params = new URLSearchParams(location.search);
 document.querySelector(`[data-tab="${params.get('tab')}"]`)?.click();
 if (params.get('theme') === 'dark' || params.get('theme') === 'light') setTheme(params.get('theme'));
+if (params.get('layers')) state.only = new Set(params.get('layers').split(',').map((n) => n.trim()).filter(Boolean));
 const linked = params.get('example');
 const ex = linked === null ? undefined : EXAMPLES.find((e) => e.main === linked) ?? (/^\d+$/.test(linked) ? EXAMPLES[+linked] : undefined);
 if (ex) {

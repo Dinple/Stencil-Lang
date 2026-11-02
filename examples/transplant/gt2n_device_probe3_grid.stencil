@@ -1,28 +1,42 @@
 stencil 0.1
 # GT2N nanosheet transistors under the PROBE3 routing grid.
 #
-# The device tier (three stacked sheets, gates at a 42 nm pitch, source/drain
-# contacts and the cuts up to the first metal) comes from GT2N. M0 .. M2 come
-# from PROBE3. The power rails move from GT2N's buried rail to PROBE3's M0,
-# so the GT2N backside and buried-rail modules are not used here.
+# The metals, M0 .. M2, come from PROBE3. The device tier (channel, gates,
+# contacts, the cell template) comes from block A or block B below; exactly
+# one of them is active.
 #
-# Try it: bind fs { MP0 = 28nm } and ROW_TRACKS fails, because the 144 nm
-# GT2N row is not a whole number of 28 nm tracks.
+#   A  the transplant: GT2N devices (stacked sheets, 42 nm gates), rails moved
+#      from GT2N's buried rail to PROBE3's M0
+#   B  the original:   PROBE3's own devices (2 fins, 45 nm gates)
+#
+# To switch, select block A and press Ctrl+/ (comment it out), then select
+# block B and press Ctrl+/ again.
 
 technology { grid = 0.5nm; stack = [dev, fs] }
 
-import "../pdk/gt2n/device"      as dev { LANDING = fs.M0 }   # VG and VSD land on PROBE3 M0
 import "../pdk/probe3/frontside" as fs
 
-# The cell template, with PROBE3-style rails on M0.
-&dev.gt2_6t {
-  rail vdd { layer = fs.M0; edge = top;    width = 36nm }
-  rail vss { layer = fs.M0; edge = bottom; width = 36nm }
+# ---- A: the transplant, GT2N devices -------------------------------------------------
+import "../pdk/gt2n/device" as dev { LANDING = fs.M0 }   # VG and VSD land on PROBE3 M0
+&dev.gt2_6t {                            # PROBE3-style template: rails on M0, 4 signal tracks
+  rail VDD { layer = fs.M0; edge = top;    width = 36nm }
+  rail VSS { layer = fs.M0; edge = bottom; width = 36nm }
   pins = [fs.M1, fs.M2]
   tracks M0 { use = 1..4 }
 }
-
 check ROW_TRACKS { holds = mod(dev.H_ROW, fs.MP0) == 0nm
                    message = "the row height is not a whole number of PROBE3 M0 pitches" }
 check M1_GEAR    { holds = mod(5 * dev.CPP, fs.MP1) == 0nm
                    message = "five gate pitches are not a whole number of M1 pitches" }
+
+# ---- B: the original, PROBE3 devices -------------------------------------------------
+# RT = 4                                 # signal tracks per cell
+# layer BOUNDARY { role = marker; gds = [100, 0] }   # the cell outline
+# import "../pdk/probe3/device" as dev { LANDING = fs.M0; BOUNDARY = BOUNDARY
+#                                        H_ROW = (RT + 2) * fs.MP0 }
+# &dev.CORE {                            # PROBE3's own template
+#   rail VDD { layer = fs.M0; edge = top;    width = 36nm }
+#   rail VSS { layer = fs.M0; edge = bottom; width = 36nm }
+#   pins = [fs.M1, fs.M2]
+#   tracks M0 { use = 1..RT }
+# }

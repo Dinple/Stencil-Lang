@@ -35,11 +35,17 @@ export function buildModel(res, theme = 'light') {
   const crosses = of('cross');
   const gateLayers = new Set(crosses.map((c) => refName(c.attrs.gate)).filter(Boolean));
   const style = new Map();
-  let ci = 0, mi = 0;
+  // Routing metals (a pitch or tracks, not a gate, not in a stratum) are coloured in their own
+  // order, so a metal keeps its colour whatever device tier sits under it; the other
+  // conductors (local interconnect, contacts) take colours from the other end of the palette.
+  const stratumLayers = new Set(of('stratum').flatMap((s) => (Array.isArray(s.attrs.layers) ? s.attrs.layers : []).map(refName)));
+  const isMetal = (l) => (l.attrs.pitch !== undefined || l.attrs.tracks !== undefined) && !stratumLayers.has(l.name);
+  let ci = 0, di = 0, mi = 0;
   for (const l of layers) {
     const role = l.attrs.role;
     if (gateLayers.has(l.name)) style.set(l.name, { color: pal.gate, pattern: 'diag' });
-    else if (role === 'conductor') { style.set(l.name, { color: pal.conductors[ci % 8], pattern: CONDUCTOR_PATTERNS[ci % 6] }); ci++; }
+    else if (role === 'conductor' && isMetal(l)) { style.set(l.name, { color: pal.conductors[ci % 8], pattern: CONDUCTOR_PATTERNS[ci % 6] }); ci++; }
+    else if (role === 'conductor') { style.set(l.name, { color: pal.conductors[(14 - (di % 8)) % 8], pattern: CONDUCTOR_PATTERNS[5 - (di % 6)] }); di++; }
     else if (role === 'channel') style.set(l.name, { color: pal.channel, pattern: 'dots' });
     else if (role === 'marker') style.set(l.name, { color: pal.markers[mi++ % 5], pattern: 'sparse' });
     else style.set(l.name, { color: pal.cut, pattern: 'xbox' });

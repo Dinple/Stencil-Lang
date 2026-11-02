@@ -79,7 +79,7 @@ test('transplant: PROBE3 devices on the ASAP7 routing grid', () => {
   assert.equal(obj(r, 'CA_M0').attrs.upper.ref, 'M1');                  // the PROBE3 contact lands on ASAP7 M1
   assert.equal(obj(r, 'M1_CELL_TRK').attrs.pitch, 180);                 // in-cell M1 follows the PROBE3 gates
   assert.equal(obj(r, 'M0'), undefined);                                // no PROBE3 metal is left
-  const bad = runEdited(main, 'BOUNDARY = OUTLINE\n', 'BOUNDARY = OUTLINE; CPP = 34nm\n');
+  const bad = runEdited(main, 'BOUNDARY = BOUNDARY\n', 'BOUNDARY = BOUNDARY; CPP = 34nm\n');
   assert.deepEqual(failed(bad), ['M1_ON_GATE_GRID']);
 });
 
@@ -93,4 +93,47 @@ test('transplant: GT2N devices on the PROBE3 routing grid', () => {
   assert.equal(obj(r, 'BPR'), undefined);                               // no buried rail: the rails are on M0
   const bad = runEdited(main, 'import "../pdk/probe3/frontside" as fs\n', 'import "../pdk/probe3/frontside" as fs { MP0 = 28nm }\n');
   assert.deepEqual(failed(bad), ['ROW_TRACKS']);
+});
+
+// Each transplant demo carries the original as block B: commenting out block A and
+// uncommenting block B (Ctrl+/ in the playground) gives back the original technology.
+const swapBlocks = (text) => {
+  let block = null;
+  return text.split('\n').map((ln) => {
+    if (ln.startsWith('# ---- A:')) block = 'A';
+    else if (ln.startsWith('# ---- B:')) block = 'B';
+    else if (ln.startsWith('# ----')) block = null;
+    if (ln.startsWith('# ----')) return ln;
+    if (block === 'A' && ln.trim()) return `# ${ln}`;
+    if (block === 'B' && ln.startsWith('# ')) return ln.slice(2);
+    return ln;
+  }).join('\n');
+};
+const runSwapped = (main) => {
+  const text = swapBlocks(readFileSync(join(root, main), 'utf8'));
+  return resolveProject({ main, load: (p) => (p === main ? text : existsSync(join(root, p)) ? readFileSync(join(root, p), 'utf8') : null) });
+};
+const sameObjects = (a, b, skip) => {
+  const strip = (v) => (Array.isArray(v) ? v.map(strip) : v && typeof v === 'object'
+    ? Object.fromEntries(Object.keys(v).sort().filter((k) => !['src', 'attr_src', 'module', 'note'].includes(k)).map((k) => [k, strip(v[k])])) : v);
+  const key = (r) => new Map(r.resolved.objects.filter((o) => !['module', 'technology', 'profile'].includes(o.kind) && !skip.includes(o.name))
+    .map((o) => [`${o.kind} ${o.name}`, JSON.stringify(strip({ ...o, children: (o.children ?? []).map((c) => JSON.stringify(strip(c))).sort() }))]));
+  const A = key(a), B = key(b);
+  assert.deepEqual([...A.keys()].sort(), [...B.keys()].sort());
+  for (const [k, v] of A) assert.equal(B.get(k), v, k);
+};
+
+test('transplant demo, block B: the original ASAP7', () => {
+  const r = runSwapped('transplant/probe3_asap7_grid.stencil');
+  assert.deepEqual(errs(r), []);
+  assert.ok(obj(r, 'GATE'));                                             // ASAP7's gate layer
+  assert.equal(obj(r, 'PC'), undefined);                                 // no PROBE3 gate left
+  sameObjects(r, run('pdk/asap7/asap7.stencil'), []);
+});
+
+test('transplant demo, block B: the original PROBE3', () => {
+  const r = runSwapped('transplant/gt2n_device_probe3_grid.stencil');
+  assert.deepEqual(errs(r), []);
+  assert.equal(obj(r, 'SDCON'), undefined);                              // no GT2N device layer left
+  sameObjects(r, run('pdk/probe3/probe3_finfet.stencil'), []);
 });

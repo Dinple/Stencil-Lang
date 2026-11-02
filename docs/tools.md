@@ -24,6 +24,7 @@ the links in these docs use:
 | Parameter | Effect |
 |---|---|
 | `?example=PATH` | opens an example by its main file, for example `?example=transplant/probe3_asap7_grid.stencil` |
+| `?layers=FIN,GATE,M2` | shows only these layers in the top view, also after an edit brings in new ones; All on leaves this mode |
 | `?tab=device` or `?tab=json` | opens that view |
 | `?theme=dark` or `?theme=light` | forces the colour theme |
 

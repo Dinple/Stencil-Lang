@@ -10,20 +10,22 @@ rails, pins and tracks for the new combination, and states the conditions
 the combination depends on as `check` objects. If a check fails,
 resolution fails with its message.
 
-Both files are in `examples/transplant/`.
+Both files are in `examples/transplant/`. Each one also carries the
+original technology, commented out, so the two can be compared on the
+spot (see [Switching to the original](#switching-to-the-original)).
 
 ## PROBE3 devices on the ASAP7 routing grid
 
 PROBE3 has a 45 nm gate pitch and a 24 nm M0. ASAP7 has no M0: its cells
 contact M1 directly, and M1 .. M3 are on a 36 nm pitch.
 
-[Open in the playground](https://dinple.github.io/Stencil-Lang/playground/?example=transplant/probe3_asap7_grid.stencil)
+[Open in the playground](https://dinple.github.io/Stencil-Lang/playground/?example=transplant/probe3_asap7_grid.stencil&layers=FIN,PC,GATE,M2)
 
 ```{literalinclude} ../examples/transplant/probe3_asap7_grid.stencil
 :language: stencil
 ```
 
-What the main file does:
+What block A, the transplant, does:
 
 1. `stack = [dev, fs, beol]` puts the PROBE3 device layers under the
    ASAP7 metals. The grid is 0.25 nm because ASAP7 needs it; the PROBE3
@@ -38,15 +40,14 @@ What the main file does:
 5. The patch on `dev.CORE` puts the rails on M1 and the signal tracks on
    M2, as ASAP7 does.
 
-The three checks are the conditions under which this is a sensible cell:
-the row is a whole number of tracks, the in-cell M1 lines, which sit one
-gate pitch apart, keep the ASAP7 M1 width plus spacing, and the PROBE3 contact is no
-wider than the M1 line it lands on.
+The two checks are the conditions under which this is a sensible cell:
+the row is a whole number of tracks, and the in-cell M1 lines, which sit
+one gate pitch apart, keep the ASAP7 M1 width plus spacing.
 
 To see a check fail, bind a tighter gate pitch in the import:
 
 ```stencil
-import "../pdk/probe3/device" as dev { LANDING = fs.M1; BOUNDARY = OUTLINE; CPP = 34nm
+import "../pdk/probe3/device" as dev { LANDING = fs.M1; BOUNDARY = BOUNDARY; CPP = 34nm
                                        H_ROW = (RT + 2) * fs.MP }
 ```
 
@@ -62,7 +63,7 @@ FinFET technology with its rails on M0. Here the GT2N device tier is used
 with the PROBE3 M0 .. M2, and the rails move from the buried rail to M0.
 The GT2N backside and buried-rail modules are not imported.
 
-[Open in the playground](https://dinple.github.io/Stencil-Lang/playground/?example=transplant/gt2n_device_probe3_grid.stencil)
+[Open in the playground](https://dinple.github.io/Stencil-Lang/playground/?example=transplant/gt2n_device_probe3_grid.stencil&layers=ACT,GATE,FIN,PC,M0)
 
 ```{literalinclude} ../examples/transplant/gt2n_device_probe3_grid.stencil
 :language: stencil
@@ -86,6 +87,36 @@ import "../pdk/probe3/frontside" as fs { MP0 = 28nm }
 error V100: check ROW_TRACKS failed: the row height is not a whole number of PROBE3 M0 pitches,
 mod(dev.H_ROW, fs.MP0) == 0nm is 4nm == 0nm
 ```
+
+## Switching to the original
+
+Each file has two blocks after the shared imports. Block A is the
+transplant and is active; block B is the original technology and is
+commented out. To compare them in the playground:
+
+1. Select the lines of block A, below its `# ---- A:` header, and press
+   Ctrl+/ to comment them out.
+2. Select the lines of block B, below its `# ---- B:` header, and press
+   Ctrl+/ to uncomment them.
+
+The drawing changes in place. With block B active, the first file is ASAP7
+as published and the second is PROBE3 as published: their resolved
+technologies are the same as `pdk/asap7/asap7.stencil` and
+`pdk/probe3/probe3_finfet.stencil`, apart from source notes and ASAP7's
+export profile. The tests check this.
+
+| Demo | Block A, the transplant | Block B, the original |
+|---|---|---|
+| PROBE3 devices on the ASAP7 routing grid | 45 nm gates (PC), a 216 nm row of 6 ASAP7 tracks | 54 nm gates (GATE), ASAP7's 270 nm row |
+| GT2N devices on the PROBE3 routing grid | stacked sheets (ACT), 42 nm gates, rails moved to M0 | PROBE3's fins (FIN), 45 nm gates |
+
+In both, the metals stay the same: they come from the same module either
+way, and keep their colours.
+
+The links above open each demo with only the layers that tell the story
+(the channel, the gates of both versions, and one routing layer), using the
+`layers=` parameter of the playground. Clicking a layer in the legend adds
+or removes it; All on goes back to showing everything.
 
 ## From the command line
 
